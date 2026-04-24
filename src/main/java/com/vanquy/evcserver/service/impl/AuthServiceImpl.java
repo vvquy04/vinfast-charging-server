@@ -82,6 +82,8 @@ public class AuthServiceImpl implements AuthService {
                 .gender(request.getGender())
                 .dateOfBirth(request.getDateOfBirth())
                 .vehicleModel(request.getVehicleModel())
+                .connectorType(request.getConnectorType())
+                .avatarUrl(request.getAvatarUrl())
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -119,6 +121,8 @@ public class AuthServiceImpl implements AuthService {
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
                 .avatarUrl(user.getAvatarUrl())
+                .vehicleModel(user.getVehicleModel())
+                .connectorType(user.getConnectorType())
                 .isNewUser(isNewUser)
                 .token(token)
                 .build();
