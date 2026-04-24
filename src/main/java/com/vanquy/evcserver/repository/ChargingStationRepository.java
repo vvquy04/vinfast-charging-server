@@ -25,6 +25,8 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
             ) AS distance
             FROM charging_stations s
             WHERE s.is_active = true
+              AND s.latitude BETWEEN :minLat AND :maxLat
+              AND s.longitude BETWEEN :minLng AND :maxLng
             HAVING distance <= :radius
             ORDER BY distance ASC
             """,
@@ -39,6 +41,8 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
                 ) AS distance
                 FROM charging_stations s
                 WHERE s.is_active = true
+                  AND s.latitude BETWEEN :minLat AND :maxLat
+                  AND s.longitude BETWEEN :minLng AND :maxLng
                 HAVING distance <= :radius
             ) AS cnt
             """,
@@ -47,6 +51,10 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
             @Param("lat") double lat,
             @Param("lng") double lng,
             @Param("radius") double radius,
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("minLng") double minLng,
+            @Param("maxLng") double maxLng,
             Pageable pageable
     );
 
@@ -64,6 +72,8 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
             FROM charging_stations s
             JOIN connector_types ct ON ct.station_id = s.station_id
             WHERE s.is_active = true
+              AND s.latitude BETWEEN :minLat AND :maxLat
+              AND s.longitude BETWEEN :minLng AND :maxLng
               AND ct.type = :connectorType
             HAVING distance <= :radius
             ORDER BY distance ASC
@@ -80,6 +90,8 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
                 FROM charging_stations s
                 JOIN connector_types ct ON ct.station_id = s.station_id
                 WHERE s.is_active = true
+                  AND s.latitude BETWEEN :minLat AND :maxLat
+                  AND s.longitude BETWEEN :minLng AND :maxLng
                   AND ct.type = :connectorType
                 HAVING distance <= :radius
             ) AS cnt
@@ -90,6 +102,10 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
             @Param("lng") double lng,
             @Param("radius") double radius,
             @Param("connectorType") String connectorType,
+            @Param("minLat") double minLat,
+            @Param("maxLat") double maxLat,
+            @Param("minLng") double minLng,
+            @Param("maxLng") double maxLng,
             Pageable pageable
     );
 }

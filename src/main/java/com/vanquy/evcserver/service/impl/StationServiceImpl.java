@@ -31,14 +31,26 @@ public class StationServiceImpl implements StationService {
     ) {
         Pageable pageable = PageRequest.of(page, size);
 
+        // 1 độ lệch Lat/Lng tương đương với khoảng 111km, 
+        // tính toán khung Bounding Box bọc lấy bán kính (giảm tải MySQL)
+        double deltaLat = radius / 111.12; 
+        double deltaLng = radius / (111.12 * Math.cos(Math.toRadians(latitude)));
+
+        double minLat = latitude - deltaLat;
+        double maxLat = latitude + deltaLat;
+        double minLng = longitude - deltaLng;
+        double maxLng = longitude + deltaLng;
+
         Page<Object[]> results;
         if (connectorType != null && !connectorType.isBlank()) {
             results = stationRepository.findNearbyStationsByConnectorType(
-                    latitude, longitude, radius, connectorType, pageable
+                    latitude, longitude, radius, connectorType,
+                    minLat, maxLat, minLng, maxLng, pageable
             );
         } else {
             results = stationRepository.findNearbyStations(
-                    latitude, longitude, radius, pageable
+                    latitude, longitude, radius,
+                    minLat, maxLat, minLng, maxLng, pageable
             );
         }
 
