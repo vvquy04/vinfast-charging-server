@@ -52,9 +52,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/api/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/stations/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
                         // Tất cả endpoint khác cần authenticated
                         .anyRequest().authenticated()
                 )

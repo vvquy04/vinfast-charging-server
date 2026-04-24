@@ -24,8 +24,6 @@ public class AuthResponse {
     private String gender;
     private LocalDate dateOfBirth;
     private String avatarUrl;
-    private String vehicleModel;
-    private String connectorType;
     private boolean isNewUser;
     private String token;
 }
