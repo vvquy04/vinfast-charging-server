@@ -26,4 +26,6 @@ public class RegisterRequest {
     private String gender;
     private LocalDate dateOfBirth;
     private String vehicleModel;
+    private String connectorType;
+    private String avatarUrl;
 }
