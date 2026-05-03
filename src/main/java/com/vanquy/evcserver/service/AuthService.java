@@ -30,4 +30,11 @@ public interface AuthService {
      * Đăng nhập bằng SĐT và Password (Không cần OTP).
      */
     AuthResponse login(LoginRequest request);
+
+    /**
+     * Đăng nhập bằng Google ID Token.
+     * Trả về AuthResponse nếu tài khoản đã tồn tại.
+     * Trả về OAuth2RequirePhoneResponse nếu tài khoản chưa tồn tại (chưa có SĐT).
+     */
+    Object loginWithGoogle(com.vanquy.evcserver.dto.request.OAuth2LoginRequest request);
 }

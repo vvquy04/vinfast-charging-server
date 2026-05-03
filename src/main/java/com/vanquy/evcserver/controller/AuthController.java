@@ -61,4 +61,20 @@ public class AuthController {
         AuthResponse data = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", data));
     }
+
+    @PostMapping("/oauth2/google")
+    public ResponseEntity<ApiResponse<Object>> loginWithGoogle(
+            @Valid @RequestBody com.vanquy.evcserver.dto.request.OAuth2LoginRequest request
+    ) {
+        Object data = authService.loginWithGoogle(request);
+        
+        if (data instanceof com.vanquy.evcserver.dto.response.OAuth2RequirePhoneResponse) {
+            // Trả về 202 Accepted cho luồng đăng ký mới
+            return ResponseEntity.status(org.springframework.http.HttpStatus.ACCEPTED)
+                    .body(ApiResponse.success("Vui lòng cung cấp số điện thoại để hoàn tất đăng ký", data));
+        }
+        
+        // Trả về 200 OK cho luồng đăng nhập thành công
+        return ResponseEntity.ok(ApiResponse.success("Đăng nhập Google thành công", data));
+    }
 }

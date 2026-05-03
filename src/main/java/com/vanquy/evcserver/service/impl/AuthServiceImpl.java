@@ -110,6 +110,45 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user, false);
     }
 
+    @Override
+    public Object loginWithGoogle(com.vanquy.evcserver.dto.request.OAuth2LoginRequest request) {
+        try {
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier verifier = 
+                    new com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier.Builder(
+                            new com.google.api.client.http.javanet.NetHttpTransport(), 
+                            new com.google.api.client.json.gson.GsonFactory())
+                    .build();
+
+            com.google.api.client.googleapis.auth.oauth2.GoogleIdToken idToken = verifier.verify(request.getIdToken());
+            if (idToken != null) {
+                com.google.api.client.googleapis.auth.oauth2.GoogleIdToken.Payload payload = idToken.getPayload();
+                String email = payload.getEmail();
+                String name = (String) payload.get("name");
+                String pictureUrl = (String) payload.get("picture");
+
+                Optional<User> userOpt = userRepository.findByEmail(email);
+                if (userOpt.isPresent()) {
+                    User user = userOpt.get();
+                    if (!user.getIsActive()) {
+                        throw new BadRequestException("Tài khoản đã bị vô hiệu hóa");
+                    }
+                    return buildAuthResponse(user, false);
+                } else {
+                    return com.vanquy.evcserver.dto.response.OAuth2RequirePhoneResponse.builder()
+                            .requiresPhone(true)
+                            .email(email)
+                            .fullName(name)
+                            .avatarUrl(pictureUrl)
+                            .build();
+                }
+            } else {
+                throw new BadRequestException("Token Google không hợp lệ");
+            }
+        } catch (Exception e) {
+            throw new BadRequestException("Xác thực Google thất bại: " + e.getMessage());
+        }
+    }
+
     private AuthResponse buildAuthResponse(User user, boolean isNewUser) {
         String token = jwtUtil.generateToken(user.getUserId());
 
