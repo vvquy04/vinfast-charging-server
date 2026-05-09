@@ -13,53 +13,8 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
 
     /**
      * Tìm trạm sạc trong bán kính (km) dùng Haversine formula.
-     * Trả về kèm distance (km) — sort theo distance ASC.
-     */
-    @Query(value = """
-            SELECT s.*, (
-                6371 * acos(
-                    cos(radians(:lat)) * cos(radians(s.latitude))
-                    * cos(radians(s.longitude) - radians(:lng))
-                    + sin(radians(:lat)) * sin(radians(s.latitude))
-                )
-            ) AS distance
-            FROM charging_stations s
-            WHERE s.is_active = true
-              AND s.latitude BETWEEN :minLat AND :maxLat
-              AND s.longitude BETWEEN :minLng AND :maxLng
-            HAVING distance <= :radius
-            ORDER BY distance ASC
-            """,
-            countQuery = """
-            SELECT COUNT(*) FROM (
-                SELECT s.station_id, (
-                    6371 * acos(
-                        cos(radians(:lat)) * cos(radians(s.latitude))
-                        * cos(radians(s.longitude) - radians(:lng))
-                        + sin(radians(:lat)) * sin(radians(s.latitude))
-                    )
-                ) AS distance
-                FROM charging_stations s
-                WHERE s.is_active = true
-                  AND s.latitude BETWEEN :minLat AND :maxLat
-                  AND s.longitude BETWEEN :minLng AND :maxLng
-                HAVING distance <= :radius
-            ) AS cnt
-            """,
-            nativeQuery = true)
-    Page<Object[]> findNearbyStations(
-            @Param("lat") double lat,
-            @Param("lng") double lng,
-            @Param("radius") double radius,
-            @Param("minLat") double minLat,
-            @Param("maxLat") double maxLat,
-            @Param("minLng") double minLng,
-            @Param("maxLng") double maxLng,
-            Pageable pageable
-    );
-
-    /**
-     * Tìm trạm sạc trong bán kính + lọc theo loại cổng sạc.
+     * Hỗ trợ lọc tùy chọn theo: loại cổng sạc, công suất tối thiểu, rating tối thiểu.
+     * Tất cả filter đều nullable — nếu null thì bỏ qua điều kiện đó.
      */
     @Query(value = """
             SELECT DISTINCT s.*, (
@@ -70,11 +25,13 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
                 )
             ) AS distance
             FROM charging_stations s
-            JOIN connector_types ct ON ct.station_id = s.station_id
+            LEFT JOIN connector_types ct ON ct.station_id = s.station_id
             WHERE s.is_active = true
               AND s.latitude BETWEEN :minLat AND :maxLat
               AND s.longitude BETWEEN :minLng AND :maxLng
-              AND ct.type = :connectorType
+              AND (:connectorType IS NULL OR ct.type = :connectorType)
+              AND (:minPowerKw IS NULL OR ct.power_kw >= :minPowerKw)
+              AND (:minRating IS NULL OR s.rating >= :minRating)
             HAVING distance <= :radius
             ORDER BY distance ASC
             """,
@@ -88,20 +45,24 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
                     )
                 ) AS distance
                 FROM charging_stations s
-                JOIN connector_types ct ON ct.station_id = s.station_id
+                LEFT JOIN connector_types ct ON ct.station_id = s.station_id
                 WHERE s.is_active = true
                   AND s.latitude BETWEEN :minLat AND :maxLat
                   AND s.longitude BETWEEN :minLng AND :maxLng
-                  AND ct.type = :connectorType
+                  AND (:connectorType IS NULL OR ct.type = :connectorType)
+                  AND (:minPowerKw IS NULL OR ct.power_kw >= :minPowerKw)
+                  AND (:minRating IS NULL OR s.rating >= :minRating)
                 HAVING distance <= :radius
             ) AS cnt
             """,
             nativeQuery = true)
-    Page<Object[]> findNearbyStationsByConnectorType(
+    Page<Object[]> findNearbyStationsFiltered(
             @Param("lat") double lat,
             @Param("lng") double lng,
             @Param("radius") double radius,
             @Param("connectorType") String connectorType,
+            @Param("minPowerKw") Integer minPowerKw,
+            @Param("minRating") Double minRating,
             @Param("minLat") double minLat,
             @Param("maxLat") double maxLat,
             @Param("minLng") double minLng,

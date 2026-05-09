@@ -16,12 +16,15 @@ public interface StationService {
      * @param longitude     kinh độ user
      * @param radius        bán kính tìm kiếm (km), default 10
      * @param connectorType lọc theo loại cổng sạc (nullable)
+     * @param minPowerKw    lọc theo công suất sạc tối thiểu (nullable)
+     * @param minRating     lọc theo điểm đánh giá tối thiểu (nullable)
      * @param page          trang hiện tại (0-indexed)
      * @param size          số kết quả mỗi trang
      */
     PageResponse<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
+            Integer minPowerKw, Double minRating,
             int page, int size
     );
 

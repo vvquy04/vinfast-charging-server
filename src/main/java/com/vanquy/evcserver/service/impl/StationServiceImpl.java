@@ -27,6 +27,7 @@ public class StationServiceImpl implements StationService {
     public PageResponse<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
+            Integer minPowerKw, Double minRating,
             int page, int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
@@ -41,18 +42,15 @@ public class StationServiceImpl implements StationService {
         double minLng = longitude - deltaLng;
         double maxLng = longitude + deltaLng;
 
-        Page<Object[]> results;
-        if (connectorType != null && !connectorType.isBlank()) {
-            results = stationRepository.findNearbyStationsByConnectorType(
-                    latitude, longitude, radius, connectorType,
-                    minLat, maxLat, minLng, maxLng, pageable
-            );
-        } else {
-            results = stationRepository.findNearbyStations(
-                    latitude, longitude, radius,
-                    minLat, maxLat, minLng, maxLng, pageable
-            );
-        }
+        // Chuẩn hóa connectorType: chuỗi rỗng → null
+        String normalizedConnectorType = (connectorType != null && !connectorType.isBlank())
+                ? connectorType : null;
+
+        Page<Object[]> results = stationRepository.findNearbyStationsFiltered(
+                latitude, longitude, radius, normalizedConnectorType,
+                minPowerKw, minRating,
+                minLat, maxLat, minLng, maxLng, pageable
+        );
 
         List<StationSummaryResponse> content = results.getContent().stream()
                 .map(this::mapToStationSummary)

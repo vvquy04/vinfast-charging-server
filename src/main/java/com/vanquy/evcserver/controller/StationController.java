@@ -17,8 +17,8 @@ public class StationController {
     private final StationService stationService;
 
     /**
-     * Tìm trạm sạc gần vị trí (Haversine).
-     * GET /api/stations?latitude=10.84&longitude=106.84&radius=10&connectorType=CCS2&page=0&size=20
+     * Tìm trạm sạc gần vị trí (Haversine) với bộ lọc tùy chọn.
+     * GET /api/stations?latitude=10.84&longitude=106.84&radius=10&connectorType=CCS2&minPowerKw=50&minRating=4.0&page=0&size=20
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<StationSummaryResponse>>> searchStations(
@@ -26,11 +26,15 @@ public class StationController {
             @RequestParam double longitude,
             @RequestParam(defaultValue = "10") double radius,
             @RequestParam(required = false) String connectorType,
+            @RequestParam(required = false) Integer minPowerKw,
+            @RequestParam(required = false) Double minRating,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
         PageResponse<StationSummaryResponse> data = stationService.searchStations(
-                latitude, longitude, radius, connectorType, page, size
+                latitude, longitude, radius, connectorType,
+                minPowerKw, minRating,
+                page, size
         );
         return ResponseEntity.ok(ApiResponse.success("OK", data));
     }
