@@ -1,13 +1,14 @@
 package com.vanquy.evcserver.controller;
 
 import com.vanquy.evcserver.dto.response.ApiResponse;
-import com.vanquy.evcserver.dto.response.PageResponse;
 import com.vanquy.evcserver.dto.response.StationDetailResponse;
 import com.vanquy.evcserver.dto.response.StationSummaryResponse;
 import com.vanquy.evcserver.service.StationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/stations")
@@ -18,23 +19,20 @@ public class StationController {
 
     /**
      * Tìm trạm sạc gần vị trí (Haversine) với bộ lọc tùy chọn.
-     * GET /api/stations?latitude=10.84&longitude=106.84&radius=10&connectorType=CCS2&minPowerKw=50&minRating=4.0&page=0&size=20
+     * GET /api/stations?latitude=10.84&longitude=106.84&radius=10&connectorType=CCS2&minPowerKw=50&minRating=4.0
      */
     @GetMapping
-    public ResponseEntity<ApiResponse<PageResponse<StationSummaryResponse>>> searchStations(
+    public ResponseEntity<ApiResponse<List<StationSummaryResponse>>> searchStations(
             @RequestParam double latitude,
             @RequestParam double longitude,
             @RequestParam(defaultValue = "10") double radius,
             @RequestParam(required = false) String connectorType,
             @RequestParam(required = false) Integer minPowerKw,
-            @RequestParam(required = false) Double minRating,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @RequestParam(required = false) Double minRating
     ) {
-        PageResponse<StationSummaryResponse> data = stationService.searchStations(
+        List<StationSummaryResponse> data = stationService.searchStations(
                 latitude, longitude, radius, connectorType,
-                minPowerKw, minRating,
-                page, size
+                minPowerKw, minRating
         );
         return ResponseEntity.ok(ApiResponse.success("OK", data));
     }

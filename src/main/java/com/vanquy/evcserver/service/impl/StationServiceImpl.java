@@ -8,9 +8,6 @@ import com.vanquy.evcserver.repository.ChargingStationRepository;
 import com.vanquy.evcserver.repository.ConnectorTypeRepository;
 import com.vanquy.evcserver.service.StationService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -24,14 +21,11 @@ public class StationServiceImpl implements StationService {
     private final ConnectorTypeRepository connectorTypeRepository;
 
     @Override
-    public PageResponse<StationSummaryResponse> searchStations(
+    public List<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
-            Integer minPowerKw, Double minRating,
-            int page, int size
+            Integer minPowerKw, Double minRating
     ) {
-        Pageable pageable = PageRequest.of(page, size);
-
         // 1 độ lệch Lat/Lng tương đương với khoảng 111km, 
         // tính toán khung Bounding Box bọc lấy bán kính (giảm tải MySQL)
         double deltaLat = radius / 111.12; 
@@ -46,22 +40,15 @@ public class StationServiceImpl implements StationService {
         String normalizedConnectorType = (connectorType != null && !connectorType.isBlank())
                 ? connectorType : null;
 
-        Page<Object[]> results = stationRepository.findNearbyStationsFiltered(
+        List<Object[]> results = stationRepository.findNearbyStationsFiltered(
                 latitude, longitude, radius, normalizedConnectorType,
                 minPowerKw, minRating,
-                minLat, maxLat, minLng, maxLng, pageable
+                minLat, maxLat, minLng, maxLng
         );
 
-        List<StationSummaryResponse> content = results.getContent().stream()
+        return results.stream()
                 .map(this::mapToStationSummary)
                 .toList();
-
-        return PageResponse.<StationSummaryResponse>builder()
-                .content(content)
-                .totalElements(results.getTotalElements())
-                .totalPages(results.getTotalPages())
-                .currentPage(results.getNumber())
-                .build();
     }
 
     @Override

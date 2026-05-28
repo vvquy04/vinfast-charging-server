@@ -1,8 +1,9 @@
 package com.vanquy.evcserver.service;
 
 import com.vanquy.evcserver.dto.request.ReviewRequest;
-import com.vanquy.evcserver.dto.response.PageResponse;
 import com.vanquy.evcserver.dto.response.ReviewResponse;
+
+import java.util.List;
 
 public interface ReviewService {
 
@@ -12,9 +13,9 @@ public interface ReviewService {
     ReviewResponse createReview(Long userId, ReviewRequest request);
 
     /**
-     * Lấy danh sách review của trạm sạc (phân trang).
+     * Lấy danh sách review của trạm sạc.
      */
-    PageResponse<ReviewResponse> getReviewsByStation(Long stationId, int page, int size);
+    List<ReviewResponse> getReviewsByStation(Long stationId);
 
     /**
      * Xóa đánh giá (chỉ chủ sở hữu).

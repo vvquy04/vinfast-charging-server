@@ -1,8 +1,6 @@
 package com.vanquy.evcserver.repository;
 
 import com.vanquy.evcserver.model.Review;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +14,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     /**
      * Lấy danh sách review của trạm sạc, sắp xếp mới nhất lên trước.
      */
-    Page<Review> findByStationStationIdOrderByCreatedAtDesc(Long stationId, Pageable pageable);
+    List<Review> findByStationStationIdOrderByCreatedAtDesc(Long stationId);
 
     /**
      * Lấy tất cả review của một user.

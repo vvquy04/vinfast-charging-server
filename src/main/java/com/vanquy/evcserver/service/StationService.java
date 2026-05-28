@@ -1,8 +1,9 @@
 package com.vanquy.evcserver.service;
 
-import com.vanquy.evcserver.dto.response.PageResponse;
 import com.vanquy.evcserver.dto.response.StationDetailResponse;
 import com.vanquy.evcserver.dto.response.StationSummaryResponse;
+
+import java.util.List;
 
 /**
  * Service interface cho Charging Stations.
@@ -18,14 +19,11 @@ public interface StationService {
      * @param connectorType lọc theo loại cổng sạc (nullable)
      * @param minPowerKw    lọc theo công suất sạc tối thiểu (nullable)
      * @param minRating     lọc theo điểm đánh giá tối thiểu (nullable)
-     * @param page          trang hiện tại (0-indexed)
-     * @param size          số kết quả mỗi trang
      */
-    PageResponse<StationSummaryResponse> searchStations(
+    List<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
-            Integer minPowerKw, Double minRating,
-            int page, int size
+            Integer minPowerKw, Double minRating
     );
 
     /**

@@ -1,7 +1,6 @@
 package com.vanquy.evcserver.service.impl;
 
 import com.vanquy.evcserver.dto.request.ReviewRequest;
-import com.vanquy.evcserver.dto.response.PageResponse;
 import com.vanquy.evcserver.dto.response.ReviewResponse;
 import com.vanquy.evcserver.exception.BadRequestException;
 import com.vanquy.evcserver.exception.ResourceNotFoundException;
@@ -13,9 +12,6 @@ import com.vanquy.evcserver.repository.ReviewRepository;
 import com.vanquy.evcserver.repository.UserRepository;
 import com.vanquy.evcserver.service.ReviewService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,25 +55,17 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public PageResponse<ReviewResponse> getReviewsByStation(Long stationId, int page, int size) {
+    public List<ReviewResponse> getReviewsByStation(Long stationId) {
         // Kiểm tra trạm có tồn tại
         if (!stationRepository.existsById(stationId)) {
             throw new ResourceNotFoundException("Trạm sạc", "stationId", stationId);
         }
 
-        Pageable pageable = PageRequest.of(page, size);
-        Page<Review> reviewPage = reviewRepository.findByStationStationIdOrderByCreatedAtDesc(stationId, pageable);
+        List<Review> reviews = reviewRepository.findByStationStationIdOrderByCreatedAtDesc(stationId);
 
-        List<ReviewResponse> content = reviewPage.getContent().stream()
+        return reviews.stream()
                 .map(this::mapToResponse)
                 .toList();
-
-        return PageResponse.<ReviewResponse>builder()
-                .content(content)
-                .totalElements(reviewPage.getTotalElements())
-                .totalPages(reviewPage.getTotalPages())
-                .currentPage(reviewPage.getNumber())
-                .build();
     }
 
     @Override

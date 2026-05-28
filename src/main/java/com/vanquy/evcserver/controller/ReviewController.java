@@ -1,7 +1,6 @@
 package com.vanquy.evcserver.controller;
 
 import com.vanquy.evcserver.dto.request.ReviewRequest;
-import com.vanquy.evcserver.dto.response.PageResponse;
 import com.vanquy.evcserver.dto.response.ReviewResponse;
 import com.vanquy.evcserver.service.ReviewService;
 import com.vanquy.evcserver.util.SecurityUtil;
@@ -10,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -38,11 +38,9 @@ public class ReviewController {
      */
     @GetMapping("/station/{stationId}")
     public ResponseEntity<?> getReviewsByStation(
-            @PathVariable Long stationId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @PathVariable Long stationId
     ) {
-        PageResponse<ReviewResponse> response = reviewService.getReviewsByStation(stationId, page, size);
+        List<ReviewResponse> response = reviewService.getReviewsByStation(stationId);
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "data", response
