@@ -123,6 +123,7 @@ public class AuthServiceImpl implements AuthService {
                 .avatarUrl(user.getAvatarUrl())
                 .vehicleModel(user.getVehicleModel())
                 .connectorType(user.getConnectorType())
+                .role(user.getRole())
                 .isNewUser(isNewUser)
                 .token(token)
                 .build();

@@ -56,6 +56,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/stations/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
                     .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+                        // Admin endpoints — chỉ ROLE_ADMIN
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         // Tất cả endpoint khác cần authenticated
                         .anyRequest().authenticated()
                 )

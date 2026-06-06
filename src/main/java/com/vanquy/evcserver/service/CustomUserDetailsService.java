@@ -35,7 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return org.springframework.security.core.userdetails.User.builder()
                 .username(String.valueOf(user.getUserId()))
                 .password("{noop}OTP_AUTHENTICATED")
-                .roles("USER")
+                .roles(user.getRole()) // Đọc role từ database (USER hoặc ADMIN)
                 .build();
     }
 }

@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ConnectorTypeResponse {
 
+    private Long connectorId;
     private String type;
     private Integer powerKw;
     private Integer totalPorts;

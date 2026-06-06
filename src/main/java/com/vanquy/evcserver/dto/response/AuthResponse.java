@@ -26,6 +26,7 @@ public class AuthResponse {
     private String avatarUrl;
     private String vehicleModel;
     private String connectorType;
+    private String role;
     private boolean isNewUser;
     private String token;
 }

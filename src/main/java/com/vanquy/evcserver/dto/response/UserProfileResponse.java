@@ -22,5 +22,7 @@ public class UserProfileResponse {
     private String avatarUrl;
     private String vehicleModel;
     private String connectorType;
+    private String role;
+    private Boolean isActive;
     private LocalDateTime createdAt;
 }
