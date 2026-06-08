@@ -49,6 +49,7 @@ public class StationHistoryServiceImpl implements StationHistoryService {
                     .user(user)
                     .station(station)
                     .visitCount(1)
+                    .lastVisited(LocalDateTime.now())
                     .build();
             historyRepository.save(history);
         }

@@ -158,6 +158,7 @@ public class AdminServiceImpl implements AdminService {
         station.setLongitude(BigDecimal.valueOf(request.getLongitude()));
         station.setOpeningHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7");
         station.setImageUrl(request.getImageUrl());
+        station.setIsActive(true); // Re-activate when updated/edited from Admin Panel
 
         // Xóa connectors cũ và thêm mới
         station.getConnectorTypes().clear();

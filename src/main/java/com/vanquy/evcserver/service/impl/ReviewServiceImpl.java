@@ -10,6 +10,7 @@ import com.vanquy.evcserver.model.User;
 import com.vanquy.evcserver.repository.ChargingStationRepository;
 import com.vanquy.evcserver.repository.ReviewRepository;
 import com.vanquy.evcserver.repository.UserRepository;
+import com.vanquy.evcserver.repository.UserStationHistoryRepository;
 import com.vanquy.evcserver.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final UserRepository userRepository;
     private final ChargingStationRepository stationRepository;
+    private final UserStationHistoryRepository historyRepository;
 
     @Override
     @Transactional
@@ -37,6 +39,13 @@ public class ReviewServiceImpl implements ReviewService {
         // 2. Tìm trạm sạc
         ChargingStation station = stationRepository.findById(request.getStationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Trạm sạc", "stationId", request.getStationId()));
+
+        // Kiểm tra xem người dùng đã từng xem/truy cập trạm sạc này chưa
+        boolean hasVisited = historyRepository.findByUserUserIdAndStationStationId(userId, request.getStationId()).isPresent();
+        if (!hasVisited) {
+            throw new BadRequestException("Bạn phải truy cập xem thông tin chi tiết trạm sạc này trước khi thực hiện đánh giá.");
+        }
+
 
         // 3. Tạo review
         Review review = Review.builder()

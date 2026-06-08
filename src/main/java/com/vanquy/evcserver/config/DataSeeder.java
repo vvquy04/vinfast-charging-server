@@ -3,6 +3,8 @@ package com.vanquy.evcserver.config;
 import com.vanquy.evcserver.model.ChargingStation;
 import com.vanquy.evcserver.model.ConnectorType;
 import com.vanquy.evcserver.model.User;
+import com.vanquy.evcserver.model.Review;
+import com.vanquy.evcserver.model.UserStationHistory;
 import com.vanquy.evcserver.repository.ChargingStationRepository;
 import com.vanquy.evcserver.repository.ConnectorTypeRepository;
 import com.vanquy.evcserver.repository.ReviewRepository;
@@ -39,6 +41,9 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         // ─── Tạo tài khoản Admin mặc định ────────────────
         seedAdminAccount();
+
+        // Cập nhật trạm Phạm Ngọc Thạch và seed thêm đánh giá nếu chưa có
+        updatePhamNgocThachStation();
 
         long currentCount = stationRepository.count();
         if (currentCount == 45) {
@@ -390,5 +395,87 @@ public class DataSeeder implements CommandLineRunner {
                 .build();
         userRepository.save(admin);
         log.info("✅ Đã tạo tài khoản Admin mặc định — SĐT: {} / Mật khẩu: admin123", adminPhone);
+    }
+
+    /**
+     * Cập nhật ảnh trạm Đống Đa - Vincom Phạm Ngọc Thạch và seed thêm đánh giá mẫu.
+     */
+    private void updatePhamNgocThachStation() {
+        try {
+            java.util.List<ChargingStation> stations = stationRepository.findAll();
+            ChargingStation station = stations.stream()
+                    .filter(s -> s.getName().contains("Phạm Ngọc Thạch"))
+                    .findFirst()
+                    .orElse(null);
+
+            if (station == null) {
+                log.warn("⚠️ Không tìm thấy trạm có tên chứa 'Phạm Ngọc Thạch' để cập nhật ảnh.");
+                return;
+            }
+
+            String targetUrl = "http://localhost:8080/uploads/stations/dong_da_vincom_pham_ngoc_thach.jpg";
+            boolean updated = false;
+
+            if (station.getImageUrl() == null || !station.getImageUrl().equals(targetUrl)) {
+                station.setImageUrl(targetUrl);
+                updated = true;
+                log.info("📸 Cập nhật ảnh trạm Đống Đa - Vincom Phạm Ngọc Thạch: {}", targetUrl);
+            }
+
+            // Tạo người dùng test
+            String reviewerPhone = "0912345678";
+            User reviewer = userRepository.findByPhoneNumber(reviewerPhone).orElse(null);
+            if (reviewer == null) {
+                reviewer = User.builder()
+                        .fullName("Nguyễn Văn A")
+                        .phoneNumber(reviewerPhone)
+                        .email("nguyenvana@gmail.com")
+                        .passwordHash(passwordEncoder.encode("user123"))
+                        .role("USER")
+                        .isActive(true)
+                        .build();
+                reviewer = userRepository.save(reviewer);
+                log.info("👤 Đã tạo người dùng test viết đánh giá: {}", reviewerPhone);
+            }
+
+            // Đảm bảo có lịch sử truy cập (để khớp nghiệp vụ chống spam)
+            java.util.Optional<UserStationHistory> historyOpt = userStationHistoryRepository.findByUserUserIdAndStationStationId(reviewer.getUserId(), station.getStationId());
+            if (historyOpt.isEmpty()) {
+                UserStationHistory history = UserStationHistory.builder()
+                        .user(reviewer)
+                        .station(station)
+                        .visitCount(1)
+                        .lastVisited(java.time.LocalDateTime.now())
+                        .build();
+                userStationHistoryRepository.save(history);
+                log.info("📝 Tạo lịch sử truy cập trạm cho người dùng: {}", reviewerPhone);
+            }
+
+            // Thêm đánh giá nếu trạm chưa có đánh giá nào
+            Integer reviewCount = reviewRepository.countByStationId(station.getStationId());
+            if (reviewCount == 0) {
+                Review review = Review.builder()
+                        .user(reviewer)
+                        .station(station)
+                        .rating(5)
+                        .comment("Trạm sạc nằm ở vị trí hầm gửi xe Vincom Phạm Ngọc Thạch rất tiện lợi và dễ tìm, sạc nhanh và ổn định.")
+                        .build();
+                reviewRepository.save(review);
+                log.info("⭐ Đã thêm đánh giá mẫu cho trạm Phạm Ngọc Thạch");
+
+                // Cập nhật rating trung bình và tổng reviews của trạm
+                Double avgRating = reviewRepository.getAverageRatingByStationId(station.getStationId());
+                Integer totalReviews = reviewRepository.countByStationId(station.getStationId());
+                station.setRating(java.math.BigDecimal.valueOf(avgRating).setScale(1, java.math.RoundingMode.HALF_UP));
+                station.setTotalReviews(totalReviews);
+                updated = true;
+            }
+
+            if (updated) {
+                stationRepository.save(station);
+            }
+        } catch (Exception e) {
+            log.error("❌ Lỗi khi cập nhật trạm Phạm Ngọc Thạch và đánh giá: ", e);
+        }
     }
 }
