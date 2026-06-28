@@ -10,6 +10,7 @@ import com.vanquy.evcserver.repository.ChargingStationRepository;
 import com.vanquy.evcserver.repository.UserRepository;
 import com.vanquy.evcserver.repository.UserStationHistoryRepository;
 import com.vanquy.evcserver.service.StationHistoryService;
+import com.vanquy.evcserver.util.ImageUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,7 +88,7 @@ public class StationHistoryServiceImpl implements StationHistoryService {
                 .stationId(station.getStationId())
                 .stationName(station.getName())
                 .stationAddress(station.getAddress())
-                .stationImageUrl(station.getImageUrl())
+                .stationImageUrl(ImageUtil.getStationImageUrl(station.getImageUrl()))
                 .visitCount(history.getVisitCount())
                 .lastVisited(history.getLastVisited())
                 .build();
