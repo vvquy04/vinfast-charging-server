@@ -30,4 +30,9 @@ public interface AuthService {
      * Đăng nhập bằng SĐT và Password (Không cần OTP).
      */
     AuthResponse login(LoginRequest request);
+
+    /**
+     * Kiểm tra xem Email đã tồn tại trong hệ thống chưa.
+     */
+    boolean checkEmailExists(String email);
 }

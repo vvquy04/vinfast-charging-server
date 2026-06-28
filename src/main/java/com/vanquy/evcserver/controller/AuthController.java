@@ -61,4 +61,12 @@ public class AuthController {
         AuthResponse data = authService.login(request);
         return ResponseEntity.ok(ApiResponse.success("Đăng nhập thành công", data));
     }
+
+    @org.springframework.web.bind.annotation.GetMapping("/check-email")
+    public ResponseEntity<ApiResponse<java.util.Map<String, Boolean>>> checkEmail(
+            @org.springframework.web.bind.annotation.RequestParam String email
+    ) {
+        boolean exists = authService.checkEmailExists(email);
+        return ResponseEntity.ok(ApiResponse.success("Kiểm tra email thành công", java.util.Map.of("exists", exists)));
+    }
 }
