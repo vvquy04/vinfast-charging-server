@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  * Cập nhật danh sách 45 trạm sạc tại Hà Nội theo danh sách người dùng cung cấp.
  * Tự động xóa dữ liệu cũ và nạp lại nếu số lượng trạm khác 45.
  */
-// @Component
+@Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
@@ -44,6 +44,9 @@ public class DataSeeder implements CommandLineRunner {
 
         // Cập nhật trạm Phạm Ngọc Thạch và seed thêm đánh giá nếu chưa có
         updatePhamNgocThachStation();
+
+        // Tự động thêm đánh giá cho tất cả các trạm sạc chưa có đánh giá
+        seedReviewsForAllStations();
 
         long currentCount = stationRepository.count();
         if (currentCount > 0) {
@@ -470,6 +473,115 @@ public class DataSeeder implements CommandLineRunner {
             }
         } catch (Exception e) {
             log.error("❌ Lỗi khi cập nhật trạm Phạm Ngọc Thạch và đánh giá: ", e);
+        }
+    }
+
+    /**
+     * Tạo thêm 5 người dùng mẫu và tự động thêm đánh giá ngẫu nhiên cho toàn bộ trạm sạc.
+     */
+    private void seedReviewsForAllStations() {
+        try {
+            // 1. Đảm bảo có ít nhất 5 tài khoản user để viết đánh giá
+            String[] names = {"Nguyễn Văn A", "Trần Thị B", "Lê Văn C", "Phạm Văn D", "Hoàng Thị E"};
+            String[] phones = {"0912345678", "0987654321", "0901122334", "0934455667", "0978899001"};
+            String[] emails = {"nguyenvana@gmail.com", "tranthib@gmail.com", "levanc@gmail.com", "phamvand@gmail.com", "hoangthie@gmail.com"};
+            
+            java.util.List<User> reviewers = new java.util.ArrayList<>();
+            for (int i = 0; i < names.length; i++) {
+                final String phone = phones[i];
+                User user = userRepository.findByPhoneNumber(phone).orElse(null);
+                if (user == null) {
+                    user = User.builder()
+                            .fullName(names[i])
+                            .phoneNumber(phone)
+                            .email(emails[i])
+                            .passwordHash(passwordEncoder.encode("user123"))
+                            .role("USER")
+                            .isActive(true)
+                            .build();
+                    user = userRepository.save(user);
+                }
+                reviewers.add(user);
+            }
+
+            // 2. Định nghĩa danh sách comment mẫu tiếng Việt
+            String[] comments = {
+                "Trạm sạc rất nhanh, vị trí dễ tìm.",
+                "Sạc ổn định, không bị ngắt quãng giữa chừng.",
+                "Vị trí hầm hơi nóng một chút nhưng công suất sạc rất tốt.",
+                "Trụ sạc hoạt động tốt, dịch vụ quanh đây rất tiện lợi.",
+                "Vị trí thuận tiện, có nhân viên hướng dẫn nhiệt tình.",
+                "Rất hài lòng, sạc đầy pin nhanh chóng.",
+                "Trạm sạch sẽ, an toàn, chất lượng súng sạc tốt.",
+                "Tiện đường đi làm, giá cả dịch vụ hợp lý.",
+                "Súng sạc dễ cắm rút, màn hình hiển thị thông tin rõ ràng.",
+                "Vị trí đỗ xe rộng rãi, sạc nhanh và ổn định."
+            };
+
+            java.util.List<ChargingStation> stations = stationRepository.findAll();
+            log.info("⭐ Bắt đầu seed đánh giá cho {} trạm sạc...", stations.size());
+            
+            java.util.Random random = new java.util.Random();
+            int totalNewReviews = 0;
+
+            for (ChargingStation station : stations) {
+                // Kiểm tra xem trạm đã có đánh giá chưa
+                int existingCount = reviewRepository.countByStationId(station.getStationId());
+                if (existingCount > 0) {
+                    continue; // Bỏ qua nếu trạm đã có đánh giá để bảo toàn dữ liệu
+                }
+
+                // Chọn ngẫu nhiên số lượng đánh giá từ 1 đến 3 lượt
+                int reviewsToCreate = random.nextInt(3) + 1; // 1, 2 hoặc 3
+                
+                // Tránh trùng lặp người dùng trong cùng một trạm
+                java.util.Set<Integer> selectedUserIndices = new java.util.HashSet<>();
+                
+                for (int i = 0; i < reviewsToCreate; i++) {
+                    int userIdx;
+                    do {
+                        userIdx = random.nextInt(reviewers.size());
+                    } while (selectedUserIndices.contains(userIdx));
+                    selectedUserIndices.add(userIdx);
+                    
+                    User reviewer = reviewers.get(userIdx);
+                    int rating = random.nextInt(2) + 4; // 4 hoặc 5 sao
+                    String comment = comments[random.nextInt(comments.length)];
+
+                    // Đảm bảo có lịch sử truy cập để khớp nghiệp vụ
+                    java.util.Optional<UserStationHistory> historyOpt = userStationHistoryRepository
+                            .findByUserUserIdAndStationStationId(reviewer.getUserId(), station.getStationId());
+                    if (historyOpt.isEmpty()) {
+                        UserStationHistory history = UserStationHistory.builder()
+                                .user(reviewer)
+                                .station(station)
+                                .visitCount(1)
+                                .lastVisited(java.time.LocalDateTime.now())
+                                .build();
+                        userStationHistoryRepository.save(history);
+                    }
+
+                    Review review = Review.builder()
+                            .user(reviewer)
+                            .station(station)
+                            .rating(rating)
+                            .comment(comment)
+                            .build();
+                    reviewRepository.save(review);
+                    totalNewReviews++;
+                }
+
+                // Cập nhật điểm số trung bình và số lượt đánh giá của trạm
+                Double avgRating = reviewRepository.getAverageRatingByStationId(station.getStationId());
+                Integer totalReviews = reviewRepository.countByStationId(station.getStationId());
+                station.setRating(java.math.BigDecimal.valueOf(avgRating).setScale(1, java.math.RoundingMode.HALF_UP));
+                station.setTotalReviews(totalReviews);
+                stationRepository.save(station);
+            }
+
+            log.info("✅ Đã tạo thêm {} đánh giá mới cho toàn bộ các trạm sạc.", totalNewReviews);
+        } catch (Exception e) {
+            log.error("❌ Lỗi khi seed đánh giá cho các trạm sạc: ", e);
         }
     }
 }

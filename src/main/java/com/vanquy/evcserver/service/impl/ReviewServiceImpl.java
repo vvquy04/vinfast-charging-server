@@ -123,6 +123,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .fullName(review.getUser().getFullName())
                 .avatarUrl(ImageUtil.getAvatarImageUrl(review.getUser().getAvatarUrl()))
                 .stationId(review.getStation().getStationId())
+                .stationName(review.getStation().getName())
                 .rating(review.getRating())
                 .comment(review.getComment())
                 .createdAt(review.getCreatedAt())

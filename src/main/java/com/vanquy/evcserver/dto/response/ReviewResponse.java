@@ -18,6 +18,7 @@ public class ReviewResponse {
     private String fullName;
     private String avatarUrl;
     private Long stationId;
+    private String stationName;
     private Integer rating;
     private String comment;
     private LocalDateTime createdAt;

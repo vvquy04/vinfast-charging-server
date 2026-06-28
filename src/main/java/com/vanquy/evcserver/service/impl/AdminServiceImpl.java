@@ -230,8 +230,8 @@ public class AdminServiceImpl implements AdminService {
     // ═══════════════════════════════════════════════════
 
     @Override
-    public Page<ReviewResponse> getAllReviews(Pageable pageable) {
-        Page<Review> reviews = reviewRepository.findAll(pageable);
+    public Page<ReviewResponse> getAllReviews(String search, Pageable pageable) {
+        Page<Review> reviews = reviewRepository.findAllBySearch(search, pageable);
         List<ReviewResponse> content = reviews.getContent().stream()
                 .map(this::toReviewResponse)
                 .toList();
@@ -309,6 +309,7 @@ public class AdminServiceImpl implements AdminService {
                 .fullName(review.getUser().getFullName())
                 .avatarUrl(ImageUtil.getAvatarImageUrl(review.getUser().getAvatarUrl()))
                 .stationId(review.getStation().getStationId())
+                .stationName(review.getStation().getName())
                 .rating(review.getRating())
                 .comment(review.getComment())
                 .createdAt(review.getCreatedAt())

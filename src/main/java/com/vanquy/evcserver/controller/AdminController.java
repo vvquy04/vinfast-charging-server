@@ -126,9 +126,11 @@ public class AdminController {
     @GetMapping("/reviews")
     public ResponseEntity<?> getAllReviews(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
     ) {
         Page<ReviewResponse> data = adminService.getAllReviews(
+                search,
                 PageRequest.of(page, size, Sort.by("reviewId").descending())
         );
         return ResponseEntity.ok(Map.of(

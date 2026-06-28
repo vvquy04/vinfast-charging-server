@@ -31,7 +31,7 @@ public interface AdminService {
     void toggleUserActive(Long userId);
 
     // ─── Quản lý Đánh giá ──────────────────────────
-    Page<ReviewResponse> getAllReviews(Pageable pageable);
+    Page<ReviewResponse> getAllReviews(String search, Pageable pageable);
 
     void deleteReview(Long reviewId);
 }
