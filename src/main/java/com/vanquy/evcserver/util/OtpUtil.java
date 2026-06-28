@@ -51,8 +51,8 @@ public class OtpUtil {
 
         // Log ra console (development mode — thay vì gửi SMS thật)
         log.info("========================================");
-        log.info("📱 OTP cho số {}: {}", phoneNumber, otpStr);
-        log.info("⏰ Hết hạn lúc: {}", expiryTime);
+        log.info("OTP for number {}: {}", phoneNumber, otpStr);
+        log.info("Expires at: {}", expiryTime);
         log.info("========================================");
 
         return otpStr;

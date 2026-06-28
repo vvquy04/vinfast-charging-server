@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  * Cập nhật danh sách 45 trạm sạc tại Hà Nội theo danh sách người dùng cung cấp.
  * Tự động xóa dữ liệu cũ và nạp lại nếu số lượng trạm khác 45.
  */
-@Component
+// @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
@@ -50,11 +50,11 @@ public class DataSeeder implements CommandLineRunner {
 
         long currentCount = stationRepository.count();
         if (currentCount > 0) {
-            log.info("📦 Database đã có {} trạm sạc — Bỏ qua seeding để bảo toàn dữ liệu.", currentCount);
+            log.info("Database already has {} stations - skipping seeding to preserve data.", currentCount);
             return;
         }
 
-        log.info("🌱 Database trống. Bắt đầu seed 45 trạm sạc tại Hà Nội...");
+        log.info("Database is empty. Starting to seed 45 charging stations in Hanoi...");
 
         // ─── 1. BA ĐÌNH ──────────────────────────────────
         createStation("Ba Đình - Bãi đỗ xe Khách sạn La Thành",
@@ -340,7 +340,7 @@ public class DataSeeder implements CommandLineRunner {
                 "24/7", null,
                 new String[][]{{"CCS2", "60", "4"}});
 
-        log.info("✅ Đã seed xong {} trạm sạc tại Hà Nội.", stationRepository.count());
+        log.info("Seeded {} stations in Hanoi successfully.", stationRepository.count());
     }
 
     private void createStation(
@@ -378,7 +378,7 @@ public class DataSeeder implements CommandLineRunner {
     private void seedAdminAccount() {
         String adminPhone = "0999999999";
         if (userRepository.existsByPhoneNumber(adminPhone)) {
-            log.info("👤 Tài khoản Admin đã tồn tại — Bỏ qua.");
+            log.info("Admin account already exists - skipping.");
             return;
         }
 
@@ -391,7 +391,7 @@ public class DataSeeder implements CommandLineRunner {
                 .isActive(true)
                 .build();
         userRepository.save(admin);
-        log.info("✅ Đã tạo tài khoản Admin mặc định — SĐT: {} / Mật khẩu: admin123", adminPhone);
+        log.info("Default admin account created - Phone: {} / Password: admin123", adminPhone);
     }
 
     /**
@@ -406,7 +406,7 @@ public class DataSeeder implements CommandLineRunner {
                     .orElse(null);
 
             if (station == null) {
-                log.warn("⚠️ Không tìm thấy trạm có tên chứa 'Phạm Ngọc Thạch' để cập nhật ảnh.");
+                log.warn("Could not find station with name containing 'Pham Ngoc Thach' to update image.");
                 return;
             }
 
@@ -416,7 +416,7 @@ public class DataSeeder implements CommandLineRunner {
             if (station.getImageUrl() == null || !station.getImageUrl().equals(targetUrl)) {
                 station.setImageUrl(targetUrl);
                 updated = true;
-                log.info("📸 Cập nhật ảnh trạm Đống Đa - Vincom Phạm Ngọc Thạch: {}", targetUrl);
+                log.info("Updated image for Dong Da - Vincom Pham Ngoc Thach station: {}", targetUrl);
             }
 
             // Tạo người dùng test
@@ -432,7 +432,7 @@ public class DataSeeder implements CommandLineRunner {
                         .isActive(true)
                         .build();
                 reviewer = userRepository.save(reviewer);
-                log.info("👤 Đã tạo người dùng test viết đánh giá: {}", reviewerPhone);
+                log.info("Created test reviewer user: {}", reviewerPhone);
             }
 
             // Đảm bảo có lịch sử truy cập (để khớp nghiệp vụ chống spam)
@@ -445,7 +445,7 @@ public class DataSeeder implements CommandLineRunner {
                         .lastVisited(java.time.LocalDateTime.now())
                         .build();
                 userStationHistoryRepository.save(history);
-                log.info("📝 Tạo lịch sử truy cập trạm cho người dùng: {}", reviewerPhone);
+                log.info("Created station visit history for user: {}", reviewerPhone);
             }
 
             // Thêm đánh giá nếu trạm chưa có đánh giá nào
@@ -458,7 +458,7 @@ public class DataSeeder implements CommandLineRunner {
                         .comment("Trạm sạc nằm ở vị trí hầm gửi xe Vincom Phạm Ngọc Thạch rất tiện lợi và dễ tìm, sạc nhanh và ổn định.")
                         .build();
                 reviewRepository.save(review);
-                log.info("⭐ Đã thêm đánh giá mẫu cho trạm Phạm Ngọc Thạch");
+                log.info("Added sample review for Pham Ngoc Thach station");
 
                 // Cập nhật rating trung bình và tổng reviews của trạm
                 Double avgRating = reviewRepository.getAverageRatingByStationId(station.getStationId());
@@ -472,7 +472,7 @@ public class DataSeeder implements CommandLineRunner {
                 stationRepository.save(station);
             }
         } catch (Exception e) {
-            log.error("❌ Lỗi khi cập nhật trạm Phạm Ngọc Thạch và đánh giá: ", e);
+            log.error("Error updating Pham Ngoc Thach station and reviews: ", e);
         }
     }
 
@@ -519,7 +519,7 @@ public class DataSeeder implements CommandLineRunner {
             };
 
             java.util.List<ChargingStation> stations = stationRepository.findAll();
-            log.info("⭐ Bắt đầu seed đánh giá cho {} trạm sạc...", stations.size());
+            log.info("Starting to seed reviews for {} stations...", stations.size());
             
             java.util.Random random = new java.util.Random();
             int totalNewReviews = 0;
@@ -579,9 +579,9 @@ public class DataSeeder implements CommandLineRunner {
                 stationRepository.save(station);
             }
 
-            log.info("✅ Đã tạo thêm {} đánh giá mới cho toàn bộ các trạm sạc.", totalNewReviews);
+            log.info("Created {} new reviews for all charging stations.", totalNewReviews);
         } catch (Exception e) {
-            log.error("❌ Lỗi khi seed đánh giá cho các trạm sạc: ", e);
+            log.error("Error seeding reviews for charging stations: ", e);
         }
     }
 }
