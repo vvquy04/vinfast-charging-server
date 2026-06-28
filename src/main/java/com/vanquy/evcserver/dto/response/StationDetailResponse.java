@@ -1,5 +1,6 @@
 package com.vanquy.evcserver.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -27,5 +28,9 @@ public class StationDetailResponse {
     private String imageUrl;
     private BigDecimal rating;
     private Integer totalReviews;
+
+    @JsonProperty("isActive")
+    private Boolean isActive;
+
     private List<ConnectorTypeResponse> connectorTypes;
 }

@@ -15,6 +15,7 @@ import com.vanquy.evcserver.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.vanquy.evcserver.util.ImageUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -120,7 +121,7 @@ public class ReviewServiceImpl implements ReviewService {
                 .reviewId(review.getReviewId())
                 .userId(review.getUser().getUserId())
                 .fullName(review.getUser().getFullName())
-                .avatarUrl(review.getUser().getAvatarUrl())
+                .avatarUrl(ImageUtil.getAvatarImageUrl(review.getUser().getAvatarUrl()))
                 .stationId(review.getStation().getStationId())
                 .rating(review.getRating())
                 .comment(review.getComment())

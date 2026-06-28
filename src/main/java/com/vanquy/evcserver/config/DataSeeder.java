@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  * Cập nhật danh sách 45 trạm sạc tại Hà Nội theo danh sách người dùng cung cấp.
  * Tự động xóa dữ liệu cũ và nạp lại nếu số lượng trạm khác 45.
  */
-@Component
+// @Component
 @RequiredArgsConstructor
 public class DataSeeder implements CommandLineRunner {
 
@@ -46,18 +46,12 @@ public class DataSeeder implements CommandLineRunner {
         updatePhamNgocThachStation();
 
         long currentCount = stationRepository.count();
-        if (currentCount == 45) {
-            log.info("📦 Database đã có đúng 45 trạm sạc — Bỏ qua seeding để bảo toàn dữ liệu test.");
+        if (currentCount > 0) {
+            log.info("📦 Database đã có {} trạm sạc — Bỏ qua seeding để bảo toàn dữ liệu.", currentCount);
             return;
         }
 
-        log.info("🧹 Dọn dẹp dữ liệu cũ (reviews, history, connectors, stations) do số lượng hiện tại là {}...", currentCount);
-        reviewRepository.deleteAll();
-        userStationHistoryRepository.deleteAll();
-        connectorTypeRepository.deleteAll();
-        stationRepository.deleteAll();
-
-        log.info("🌱 Bắt đầu seed 45 trạm sạc tại Hà Nội...");
+        log.info("🌱 Database trống. Bắt đầu seed 45 trạm sạc tại Hà Nội...");
 
         // ─── 1. BA ĐÌNH ──────────────────────────────────
         createStation("Ba Đình - Bãi đỗ xe Khách sạn La Thành",
@@ -413,7 +407,7 @@ public class DataSeeder implements CommandLineRunner {
                 return;
             }
 
-            String targetUrl = "http://localhost:8080/uploads/stations/dong_da_vincom_pham_ngoc_thach.jpg";
+            String targetUrl = "dong_da_vincom_pham_ngoc_thach.jpg";
             boolean updated = false;
 
             if (station.getImageUrl() == null || !station.getImageUrl().equals(targetUrl)) {

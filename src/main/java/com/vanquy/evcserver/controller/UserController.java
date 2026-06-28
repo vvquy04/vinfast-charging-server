@@ -1,9 +1,11 @@
 package com.vanquy.evcserver.controller;
 
+import com.vanquy.evcserver.dto.request.ChangePasswordRequest;
 import com.vanquy.evcserver.dto.request.UpdateProfileRequest;
 import com.vanquy.evcserver.dto.response.UserProfileResponse;
 import com.vanquy.evcserver.service.UserService;
 import com.vanquy.evcserver.util.SecurityUtil;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -43,4 +45,18 @@ public class UserController {
                 "data", profile
         ));
     }
+
+    /**
+     * PUT /api/users/me/change-password — Đổi mật khẩu người dùng hiện tại.
+     */
+    @PutMapping("/me/change-password")
+    public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        userService.changePassword(userId, request);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đổi mật khẩu thành công"
+        ));
+    }
 }
+

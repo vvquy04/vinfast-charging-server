@@ -1,5 +1,6 @@
 package com.vanquy.evcserver.service.impl;
 
+import com.vanquy.evcserver.dto.request.ChangePasswordRequest;
 import com.vanquy.evcserver.dto.request.UpdateProfileRequest;
 import com.vanquy.evcserver.dto.response.UserProfileResponse;
 import com.vanquy.evcserver.exception.BadRequestException;
@@ -8,14 +9,17 @@ import com.vanquy.evcserver.model.User;
 import com.vanquy.evcserver.repository.UserRepository;
 import com.vanquy.evcserver.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.vanquy.evcserver.util.ImageUtil;
 
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserProfileResponse getProfile(Long userId) {
@@ -49,7 +53,7 @@ public class UserServiceImpl implements UserService {
             user.setDateOfBirth(request.getDateOfBirth());
         }
         if (request.getAvatarUrl() != null) {
-            user.setAvatarUrl(request.getAvatarUrl());
+            user.setAvatarUrl(ImageUtil.sanitizeAvatarImage(request.getAvatarUrl()));
         }
         if (request.getVehicleModel() != null) {
             user.setVehicleModel(request.getVehicleModel());
@@ -72,10 +76,36 @@ public class UserServiceImpl implements UserService {
                 .email(user.getEmail())
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
-                .avatarUrl(user.getAvatarUrl())
+                .avatarUrl(ImageUtil.getAvatarImageUrl(user.getAvatarUrl()))
                 .vehicleModel(user.getVehicleModel())
                 .connectorType(user.getConnectorType())
                 .createdAt(user.getCreatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void changePassword(Long userId, ChangePasswordRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "userId", userId));
+
+        // 1. Xác thực mật khẩu hiện tại
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {
+            throw new BadRequestException("Mật khẩu hiện tại không đúng");
+        }
+
+        // 2. Kiểm tra mật khẩu mới và xác nhận khớp nhau
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Mật khẩu mới và xác nhận mật khẩu không khớp");
+        }
+
+        // 3. Kiểm tra mật khẩu mới không trùng mật khẩu cũ
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw new BadRequestException("Mật khẩu mới phải khác mật khẩu hiện tại");
+        }
+
+        // 4. Cập nhật mật khẩu mới
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
     }
 }

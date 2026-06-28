@@ -2,6 +2,7 @@ package com.vanquy.evcserver.service.impl;
 
 import com.vanquy.evcserver.dto.request.LoginRequest;
 import com.vanquy.evcserver.dto.request.RegisterRequest;
+import com.vanquy.evcserver.dto.request.ResetPasswordRequest;
 import com.vanquy.evcserver.dto.request.SendOtpRequest;
 import com.vanquy.evcserver.dto.request.VerifyOtpRequest;
 import com.vanquy.evcserver.dto.response.AuthResponse;
@@ -14,6 +15,7 @@ import com.vanquy.evcserver.util.OtpUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.vanquy.evcserver.util.ImageUtil;
 
 import java.util.Optional;
 
@@ -80,7 +82,7 @@ public class AuthServiceImpl implements AuthService {
                 .dateOfBirth(request.getDateOfBirth())
                 .vehicleModel(request.getVehicleModel())
                 .connectorType(request.getConnectorType())
-                .avatarUrl(request.getAvatarUrl())
+                .avatarUrl(ImageUtil.sanitizeAvatarImage(request.getAvatarUrl()))
                 .build();
 
         User savedUser = userRepository.save(newUser);
@@ -107,6 +109,32 @@ public class AuthServiceImpl implements AuthService {
         return buildAuthResponse(user, false);
     }
 
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+        String phoneNumber = request.getPhoneNumber();
+
+        // 1. Kiểm tra SĐT đã xác thực OTP chưa
+        if (!otpUtil.isPhoneVerified(phoneNumber)) {
+            throw new BadRequestException("Vui lòng xác thực số điện thoại bằng OTP trước khi đặt lại mật khẩu");
+        }
+
+        // 2. Kiểm tra mật khẩu mới và xác nhận khớp nhau
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            throw new BadRequestException("Mật khẩu mới và xác nhận mật khẩu không khớp");
+        }
+
+        // 3. Tìm user theo SĐT
+        User user = userRepository.findByPhoneNumber(phoneNumber)
+                .orElseThrow(() -> new BadRequestException("Số điện thoại không tồn tại trong hệ thống"));
+
+        // 4. Cập nhật mật khẩu mới
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // 5. Xóa cờ xác thực OTP
+        otpUtil.clearVerifiedPhone(phoneNumber);
+    }
+
     private AuthResponse buildAuthResponse(User user, boolean isNewUser) {
         String token = jwtUtil.generateToken(user.getUserId());
 
@@ -117,7 +145,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
-                .avatarUrl(user.getAvatarUrl())
+                .avatarUrl(ImageUtil.getAvatarImageUrl(user.getAvatarUrl()))
                 .vehicleModel(user.getVehicleModel())
                 .connectorType(user.getConnectorType())
                 .role(user.getRole())
@@ -134,3 +162,4 @@ public class AuthServiceImpl implements AuthService {
         return userRepository.existsByEmail(email);
     }
 }
+

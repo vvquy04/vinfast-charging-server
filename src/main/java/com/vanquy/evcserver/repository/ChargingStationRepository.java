@@ -48,4 +48,8 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
             @Param("minLng") double minLng,
             @Param("maxLng") double maxLng
     );
+    /**
+     * Đếm số trạm sạc theo trạng thái hoạt động.
+     */
+    long countByIsActive(Boolean isActive);
 }

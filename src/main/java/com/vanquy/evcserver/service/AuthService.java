@@ -2,6 +2,7 @@ package com.vanquy.evcserver.service;
 
 import com.vanquy.evcserver.dto.request.LoginRequest;
 import com.vanquy.evcserver.dto.request.RegisterRequest;
+import com.vanquy.evcserver.dto.request.ResetPasswordRequest;
 import com.vanquy.evcserver.dto.request.SendOtpRequest;
 import com.vanquy.evcserver.dto.request.VerifyOtpRequest;
 import com.vanquy.evcserver.dto.response.AuthResponse;
@@ -35,4 +36,9 @@ public interface AuthService {
      * Kiểm tra xem Email đã tồn tại trong hệ thống chưa.
      */
     boolean checkEmailExists(String email);
+
+    /**
+     * Đặt lại mật khẩu (Quên mật khẩu — yêu cầu SĐT đã xác thực OTP).
+     */
+    void resetPassword(ResetPasswordRequest request);
 }

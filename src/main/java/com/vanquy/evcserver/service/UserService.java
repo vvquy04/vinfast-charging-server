@@ -1,5 +1,6 @@
 package com.vanquy.evcserver.service;
 
+import com.vanquy.evcserver.dto.request.ChangePasswordRequest;
 import com.vanquy.evcserver.dto.request.UpdateProfileRequest;
 import com.vanquy.evcserver.dto.response.UserProfileResponse;
 
@@ -14,4 +15,10 @@ public interface UserService {
      * Cập nhật thông tin hồ sơ (partial update — chỉ ghi đè field khác null).
      */
     UserProfileResponse updateProfile(Long userId, UpdateProfileRequest request);
+
+    /**
+     * Đổi mật khẩu (cho người dùng đã đăng nhập).
+     */
+    void changePassword(Long userId, ChangePasswordRequest request);
 }
+

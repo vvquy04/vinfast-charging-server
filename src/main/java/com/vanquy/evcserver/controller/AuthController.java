@@ -2,6 +2,7 @@ package com.vanquy.evcserver.controller;
 
 import com.vanquy.evcserver.dto.request.LoginRequest;
 import com.vanquy.evcserver.dto.request.RegisterRequest;
+import com.vanquy.evcserver.dto.request.ResetPasswordRequest;
 import com.vanquy.evcserver.dto.request.SendOtpRequest;
 import com.vanquy.evcserver.dto.request.VerifyOtpRequest;
 import com.vanquy.evcserver.dto.response.ApiResponse;
@@ -69,4 +70,13 @@ public class AuthController {
         boolean exists = authService.checkEmailExists(email);
         return ResponseEntity.ok(ApiResponse.success("Kiểm tra email thành công", java.util.Map.of("exists", exists)));
     }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Object>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequest request
+    ) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success("Đặt lại mật khẩu thành công", null));
+    }
 }
+

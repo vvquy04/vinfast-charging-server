@@ -9,6 +9,7 @@ import com.vanquy.evcserver.repository.ConnectorTypeRepository;
 import com.vanquy.evcserver.service.StationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import com.vanquy.evcserver.util.ImageUtil;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -67,9 +68,10 @@ public class StationServiceImpl implements StationService {
                 .latitude(station.getLatitude())
                 .longitude(station.getLongitude())
                 .openingHours(station.getOpeningHours())
-                .imageUrl(station.getImageUrl())
+                .imageUrl(ImageUtil.getStationImageUrl(station.getImageUrl()))
                 .rating(station.getRating())
                 .totalReviews(station.getTotalReviews())
+                .isActive(station.getIsActive())
                 .connectorTypes(connectors)
                 .build();
     }
@@ -99,7 +101,7 @@ public class StationServiceImpl implements StationService {
                 .latitude(row[3] instanceof BigDecimal bd ? bd : BigDecimal.valueOf(((Number) row[3]).doubleValue()))
                 .longitude(row[4] instanceof BigDecimal bd ? bd : BigDecimal.valueOf(((Number) row[4]).doubleValue()))
                 .openingHours((String) row[5])
-                .imageUrl((String) row[6])
+                .imageUrl(ImageUtil.getStationImageUrl((String) row[6]))
                 .rating(row[7] instanceof BigDecimal bd ? bd : BigDecimal.valueOf(((Number) row[7]).doubleValue()))
                 .totalReviews(((Number) row[8]).intValue())
                 .distance(Math.round(((Number) row[row.length - 1]).doubleValue() * 10.0) / 10.0)

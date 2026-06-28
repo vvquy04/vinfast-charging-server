@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.vanquy.evcserver.util.ImageUtil;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -37,7 +38,7 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public AdminDashboardStatsResponse getDashboardStats() {
-        long totalStations = stationRepository.count();
+        long totalStations = stationRepository.countByIsActive(true);
         long totalUsers = userRepository.count();
         long totalReviews = reviewRepository.count();
         long totalVisits = historyRepository.count();
@@ -126,7 +127,7 @@ public class AdminServiceImpl implements AdminService {
                 .latitude(BigDecimal.valueOf(request.getLatitude()))
                 .longitude(BigDecimal.valueOf(request.getLongitude()))
                 .openingHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7")
-                .imageUrl(request.getImageUrl())
+                .imageUrl(ImageUtil.sanitizeStationImage(request.getImageUrl()))
                 .build();
 
         // Thêm các connector
@@ -157,7 +158,7 @@ public class AdminServiceImpl implements AdminService {
         station.setLatitude(BigDecimal.valueOf(request.getLatitude()));
         station.setLongitude(BigDecimal.valueOf(request.getLongitude()));
         station.setOpeningHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7");
-        station.setImageUrl(request.getImageUrl());
+        station.setImageUrl(ImageUtil.sanitizeStationImage(request.getImageUrl()));
         station.setIsActive(true); // Re-activate when updated/edited from Admin Panel
 
         // Xóa connectors cũ và thêm mới
@@ -276,9 +277,10 @@ public class AdminServiceImpl implements AdminService {
                 .latitude(station.getLatitude())
                 .longitude(station.getLongitude())
                 .openingHours(station.getOpeningHours())
-                .imageUrl(station.getImageUrl())
+                .imageUrl(ImageUtil.getStationImageUrl(station.getImageUrl()))
                 .rating(station.getRating())
                 .totalReviews(station.getTotalReviews())
+                .isActive(station.getIsActive())
                 .connectorTypes(connectors)
                 .build();
     }
@@ -291,7 +293,7 @@ public class AdminServiceImpl implements AdminService {
                 .email(user.getEmail())
                 .gender(user.getGender())
                 .dateOfBirth(user.getDateOfBirth())
-                .avatarUrl(user.getAvatarUrl())
+                .avatarUrl(ImageUtil.getAvatarImageUrl(user.getAvatarUrl()))
                 .vehicleModel(user.getVehicleModel())
                 .connectorType(user.getConnectorType())
                 .role(user.getRole())
@@ -305,7 +307,7 @@ public class AdminServiceImpl implements AdminService {
                 .reviewId(review.getReviewId())
                 .userId(review.getUser().getUserId())
                 .fullName(review.getUser().getFullName())
-                .avatarUrl(review.getUser().getAvatarUrl())
+                .avatarUrl(ImageUtil.getAvatarImageUrl(review.getUser().getAvatarUrl()))
                 .stationId(review.getStation().getStationId())
                 .rating(review.getRating())
                 .comment(review.getComment())

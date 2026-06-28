@@ -1,5 +1,6 @@
 package com.vanquy.evcserver.dto.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,6 +24,9 @@ public class UserProfileResponse {
     private String vehicleModel;
     private String connectorType;
     private String role;
+
+    @JsonProperty("isActive")
     private Boolean isActive;
+
     private LocalDateTime createdAt;
 }

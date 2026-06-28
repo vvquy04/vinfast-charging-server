@@ -73,4 +73,47 @@ public class UploadController {
 
         return ResponseEntity.ok(ApiResponse.success("Tải ảnh lên thành công", data));
     }
+
+    @PostMapping(value = "/station", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<Map<String, String>>> uploadStation(
+            @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("File ảnh không được để trống"));
+        }
+
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("File phải là hình ảnh"));
+        }
+
+        Path baseDir = Paths.get(uploadDir, "stations").toAbsolutePath().normalize();
+        Files.createDirectories(baseDir);
+
+        String originalName = StringUtils.cleanPath(file.getOriginalFilename() == null ? "station" : file.getOriginalFilename());
+        String extension = "";
+        int dotIndex = originalName.lastIndexOf('.');
+        if (dotIndex >= 0) {
+            extension = originalName.substring(dotIndex);
+        }
+
+        String safeFileName = "station-"
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
+                + "-"
+                + UUID.randomUUID()
+                + extension;
+
+        Path targetPath = baseDir.resolve(safeFileName).normalize();
+        Files.copy(file.getInputStream(), targetPath);
+
+        String publicUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+            .path("/uploads/stations/")
+            .path(safeFileName)
+            .toUriString();
+        Map<String, String> data = new HashMap<>();
+        data.put("url", publicUrl);
+        data.put("fileName", safeFileName);
+
+        return ResponseEntity.ok(ApiResponse.success("Tải ảnh trạm sạc lên thành công", data));
+    }
 }
