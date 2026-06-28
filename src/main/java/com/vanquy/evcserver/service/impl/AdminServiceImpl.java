@@ -26,293 +26,298 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminServiceImpl implements AdminService {
 
-    private final ChargingStationRepository stationRepository;
-    private final ConnectorTypeRepository connectorTypeRepository;
-    private final UserRepository userRepository;
-    private final ReviewRepository reviewRepository;
-    private final UserStationHistoryRepository historyRepository;
+        private final ChargingStationRepository stationRepository;
+        private final ConnectorTypeRepository connectorTypeRepository;
+        private final UserRepository userRepository;
+        private final ReviewRepository reviewRepository;
+        private final UserStationHistoryRepository historyRepository;
 
-    // ═══════════════════════════════════════════════════
-    //  DASHBOARD
-    // ═══════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════
+        // DASHBOARD
+        // ═══════════════════════════════════════════════════
 
-    @Override
-    public AdminDashboardStatsResponse getDashboardStats() {
-        long totalStations = stationRepository.countByIsActive(true);
-        long totalUsers = userRepository.count();
-        long totalReviews = reviewRepository.count();
-        long totalVisits = historyRepository.count();
+        @Override
+        public AdminDashboardStatsResponse getDashboardStats() {
+                long totalStations = stationRepository.countByIsActive(true);
+                long totalUsers = userRepository.count();
+                long totalReviews = reviewRepository.count();
+                long totalVisits = historyRepository.count();
 
-        // Thống kê trạm theo quận/huyện (lấy phần trước dấu " - " trong tên trạm)
-        List<ChargingStation> allStations = stationRepository.findAll();
-        Map<String, Long> districtMap = allStations.stream()
-                .collect(Collectors.groupingBy(
-                        s -> {
-                            String name = s.getName();
-                            int idx = name.indexOf(" - ");
-                            return idx > 0 ? name.substring(0, idx) : "Khác";
-                        },
-                        Collectors.counting()
-                ));
-        List<AdminDashboardStatsResponse.DistrictStationCount> stationsByDistrict = districtMap.entrySet().stream()
-                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .map(e -> AdminDashboardStatsResponse.DistrictStationCount.builder()
-                        .district(e.getKey())
-                        .count(e.getValue())
-                        .build())
-                .toList();
+                // Thống kê trạm theo quận/huyện (lấy phần trước dấu " - " trong tên trạm)
+                List<ChargingStation> allStations = stationRepository.findAll();
+                Map<String, Long> districtMap = allStations.stream()
+                                .collect(Collectors.groupingBy(
+                                                s -> {
+                                                        String name = s.getName();
+                                                        int idx = name.indexOf(" - ");
+                                                        return idx > 0 ? name.substring(0, idx) : "Khác";
+                                                },
+                                                Collectors.counting()));
+                List<AdminDashboardStatsResponse.DistrictStationCount> stationsByDistrict = districtMap.entrySet()
+                                .stream()
+                                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                                .map(e -> AdminDashboardStatsResponse.DistrictStationCount.builder()
+                                                .district(e.getKey())
+                                                .count(e.getValue())
+                                                .build())
+                                .toList();
 
-        // Thống kê đánh giá theo tháng (6 tháng gần nhất)
-        List<Review> allReviews = reviewRepository.findAll();
-        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
-        Map<String, Long> monthMap = allReviews.stream()
-                .collect(Collectors.groupingBy(
-                        r -> r.getCreatedAt().format(monthFormatter),
-                        TreeMap::new,
-                        Collectors.counting()
-                ));
-        List<AdminDashboardStatsResponse.MonthlyReviewCount> reviewsByMonth = monthMap.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(e -> AdminDashboardStatsResponse.MonthlyReviewCount.builder()
-                        .month(e.getKey())
-                        .count(e.getValue())
-                        .build())
-                .toList();
+                // Thống kê đánh giá theo tháng (6 tháng gần nhất)
+                List<Review> allReviews = reviewRepository.findAll();
+                DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+                Map<String, Long> monthMap = allReviews.stream()
+                                .collect(Collectors.groupingBy(
+                                                r -> r.getCreatedAt().format(monthFormatter),
+                                                TreeMap::new,
+                                                Collectors.counting()));
+                List<AdminDashboardStatsResponse.MonthlyReviewCount> reviewsByMonth = monthMap.entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .map(e -> AdminDashboardStatsResponse.MonthlyReviewCount.builder()
+                                                .month(e.getKey())
+                                                .count(e.getValue())
+                                                .build())
+                                .toList();
 
-        return AdminDashboardStatsResponse.builder()
-                .totalStations(totalStations)
-                .totalUsers(totalUsers)
-                .totalReviews(totalReviews)
-                .totalVisits(totalVisits)
-                .stationsByDistrict(stationsByDistrict)
-                .reviewsByMonth(reviewsByMonth)
-                .build();
-    }
-
-    // ═══════════════════════════════════════════════════
-    //  QUẢN LÝ TRẠM SẠC
-    // ═══════════════════════════════════════════════════
-
-    @Override
-    public Page<StationDetailResponse> getAllStations(String search, Pageable pageable) {
-        List<ChargingStation> allStations = stationRepository.findAll();
-
-        // Lọc theo từ khóa tìm kiếm
-        if (search != null && !search.isBlank()) {
-            String lower = search.toLowerCase();
-            allStations = allStations.stream()
-                    .filter(s -> s.getName().toLowerCase().contains(lower)
-                            || s.getAddress().toLowerCase().contains(lower))
-                    .toList();
+                return AdminDashboardStatsResponse.builder()
+                                .totalStations(totalStations)
+                                .totalUsers(totalUsers)
+                                .totalReviews(totalReviews)
+                                .totalVisits(totalVisits)
+                                .stationsByDistrict(stationsByDistrict)
+                                .reviewsByMonth(reviewsByMonth)
+                                .build();
         }
 
-        // Phân trang thủ công
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allStations.size());
-        List<StationDetailResponse> page = (start > allStations.size())
-                ? List.of()
-                : allStations.subList(start, end).stream()
-                .map(this::toStationDetailResponse)
-                .toList();
+        // ═══════════════════════════════════════════════════
+        // QUẢN LÝ TRẠM SẠC
+        // ═══════════════════════════════════════════════════
 
-        return new PageImpl<>(page, pageable, allStations.size());
-    }
+        @Override
+        public Page<StationDetailResponse> getAllStations(String search, Pageable pageable) {
+                List<ChargingStation> allStations = stationRepository.findAll();
 
-    @Override
-    @Transactional
-    public StationDetailResponse createStation(AdminStationRequest request) {
-        ChargingStation station = ChargingStation.builder()
-                .name(request.getName())
-                .address(request.getAddress())
-                .latitude(BigDecimal.valueOf(request.getLatitude()))
-                .longitude(BigDecimal.valueOf(request.getLongitude()))
-                .openingHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7")
-                .imageUrl(ImageUtil.sanitizeStationImage(request.getImageUrl()))
-                .build();
+                // Lọc theo từ khóa tìm kiếm
+                if (search != null && !search.isBlank()) {
+                        String lower = search.toLowerCase();
+                        allStations = allStations.stream()
+                                        .filter(s -> s.getName().toLowerCase().contains(lower)
+                                                        || s.getAddress().toLowerCase().contains(lower))
+                                        .toList();
+                }
 
-        // Thêm các connector
-        if (request.getConnectors() != null) {
-            for (AdminStationRequest.ConnectorInput ci : request.getConnectors()) {
-                ConnectorType ct = ConnectorType.builder()
-                        .type(ci.getType())
-                        .powerKw(ci.getPowerKw())
-                        .totalPorts(ci.getTotalPorts())
-                        .station(station)
-                        .build();
-                station.getConnectorTypes().add(ct);
-            }
+                // Phân trang thủ công
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), allStations.size());
+                List<StationDetailResponse> page = (start > allStations.size())
+                                ? List.of()
+                                : allStations.subList(start, end).stream()
+                                                .map(this::toStationDetailResponse)
+                                                .toList();
+
+                return new PageImpl<>(page, pageable, allStations.size());
         }
 
-        stationRepository.save(station);
-        return toStationDetailResponse(station);
-    }
+        @Override
+        @Transactional
+        public StationDetailResponse createStation(AdminStationRequest request) {
+                ChargingStation station = ChargingStation.builder()
+                                .name(request.getName())
+                                .address(request.getAddress())
+                                .latitude(BigDecimal.valueOf(request.getLatitude()))
+                                .longitude(BigDecimal.valueOf(request.getLongitude()))
+                                .openingHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7")
+                                .imageUrl(ImageUtil.sanitizeStationImage(request.getImageUrl()))
+                                .build();
 
-    @Override
-    @Transactional
-    public StationDetailResponse updateStation(Long stationId, AdminStationRequest request) {
-        ChargingStation station = stationRepository.findById(stationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trạm sạc với ID: " + stationId));
+                // Thêm các connector
+                if (request.getConnectors() != null) {
+                        for (AdminStationRequest.ConnectorInput ci : request.getConnectors()) {
+                                ConnectorType ct = ConnectorType.builder()
+                                                .type(ci.getType())
+                                                .powerKw(ci.getPowerKw())
+                                                .totalPorts(ci.getTotalPorts())
+                                                .station(station)
+                                                .build();
+                                station.getConnectorTypes().add(ct);
+                        }
+                }
 
-        station.setName(request.getName());
-        station.setAddress(request.getAddress());
-        station.setLatitude(BigDecimal.valueOf(request.getLatitude()));
-        station.setLongitude(BigDecimal.valueOf(request.getLongitude()));
-        station.setOpeningHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7");
-        station.setImageUrl(ImageUtil.sanitizeStationImage(request.getImageUrl()));
-        station.setIsActive(true); // Re-activate when updated/edited from Admin Panel
-
-        // Xóa connectors cũ và thêm mới
-        station.getConnectorTypes().clear();
-        if (request.getConnectors() != null) {
-            for (AdminStationRequest.ConnectorInput ci : request.getConnectors()) {
-                ConnectorType ct = ConnectorType.builder()
-                        .type(ci.getType())
-                        .powerKw(ci.getPowerKw())
-                        .totalPorts(ci.getTotalPorts())
-                        .station(station)
-                        .build();
-                station.getConnectorTypes().add(ct);
-            }
+                stationRepository.save(station);
+                return toStationDetailResponse(station);
         }
 
-        stationRepository.save(station);
-        return toStationDetailResponse(station);
-    }
+        @Override
+        @Transactional
+        public StationDetailResponse updateStation(Long stationId, AdminStationRequest request) {
+                ChargingStation station = stationRepository.findById(stationId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy trạm sạc với ID: " + stationId));
 
-    @Override
-    @Transactional
-    public void deleteStation(Long stationId) {
-        ChargingStation station = stationRepository.findById(stationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy trạm sạc với ID: " + stationId));
-        station.setIsActive(false);
-        stationRepository.save(station);
-    }
+                station.setName(request.getName());
+                station.setAddress(request.getAddress());
+                station.setLatitude(BigDecimal.valueOf(request.getLatitude()));
+                station.setLongitude(BigDecimal.valueOf(request.getLongitude()));
+                station.setOpeningHours(request.getOpeningHours() != null ? request.getOpeningHours() : "24/7");
+                station.setImageUrl(ImageUtil.sanitizeStationImage(request.getImageUrl()));
+                station.setIsActive(true);
 
-    // ═══════════════════════════════════════════════════
-    //  QUẢN LÝ NGƯỜI DÙNG
-    // ═══════════════════════════════════════════════════
+                // Xóa connectors cũ và thêm mới
+                station.getConnectorTypes().clear();
+                if (request.getConnectors() != null) {
+                        for (AdminStationRequest.ConnectorInput ci : request.getConnectors()) {
+                                ConnectorType ct = ConnectorType.builder()
+                                                .type(ci.getType())
+                                                .powerKw(ci.getPowerKw())
+                                                .totalPorts(ci.getTotalPorts())
+                                                .station(station)
+                                                .build();
+                                station.getConnectorTypes().add(ct);
+                        }
+                }
 
-    @Override
-    public Page<UserProfileResponse> getAllUsers(String search, Pageable pageable) {
-        List<User> allUsers = userRepository.findAll();
-
-        if (search != null && !search.isBlank()) {
-            String lower = search.toLowerCase();
-            allUsers = allUsers.stream()
-                    .filter(u -> (u.getFullName() != null && u.getFullName().toLowerCase().contains(lower))
-                            || u.getPhoneNumber().toLowerCase().contains(lower)
-                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(lower)))
-                    .toList();
+                stationRepository.save(station);
+                return toStationDetailResponse(station);
         }
 
-        int start = (int) pageable.getOffset();
-        int end = Math.min(start + pageable.getPageSize(), allUsers.size());
-        List<UserProfileResponse> page = (start > allUsers.size())
-                ? List.of()
-                : allUsers.subList(start, end).stream()
-                .map(this::toUserProfileResponse)
-                .toList();
+        @Override
+        @Transactional
+        public void deleteStation(Long stationId) {
+                ChargingStation station = stationRepository.findById(stationId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy trạm sạc với ID: " + stationId));
+                station.setIsActive(false);
+                stationRepository.save(station);
+        }
 
-        return new PageImpl<>(page, pageable, allUsers.size());
-    }
+        // ═══════════════════════════════════════════════════
+        // QUẢN LÝ NGƯỜI DÙNG
+        // ═══════════════════════════════════════════════════
 
-    @Override
-    @Transactional
-    public void toggleUserActive(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng với ID: " + userId));
-        user.setIsActive(!user.getIsActive());
-        userRepository.save(user);
-    }
+        @Override
+        public Page<UserProfileResponse> getAllUsers(String search, Pageable pageable) {
+                List<User> allUsers = userRepository.findAll();
 
-    // ═══════════════════════════════════════════════════
-    //  QUẢN LÝ ĐÁNH GIÁ
-    // ═══════════════════════════════════════════════════
+                if (search != null && !search.isBlank()) {
+                        String lower = search.toLowerCase();
+                        allUsers = allUsers.stream()
+                                        .filter(u -> (u.getFullName() != null
+                                                        && u.getFullName().toLowerCase().contains(lower))
+                                                        || u.getPhoneNumber().toLowerCase().contains(lower)
+                                                        || (u.getEmail() != null
+                                                                        && u.getEmail().toLowerCase().contains(lower)))
+                                        .toList();
+                }
 
-    @Override
-    public Page<ReviewResponse> getAllReviews(String search, Pageable pageable) {
-        Page<Review> reviews = reviewRepository.findAllBySearch(search, pageable);
-        List<ReviewResponse> content = reviews.getContent().stream()
-                .map(this::toReviewResponse)
-                .toList();
-        return new PageImpl<>(content, pageable, reviews.getTotalElements());
-    }
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), allUsers.size());
+                List<UserProfileResponse> page = (start > allUsers.size())
+                                ? List.of()
+                                : allUsers.subList(start, end).stream()
+                                                .map(this::toUserProfileResponse)
+                                                .toList();
 
-    @Override
-    @Transactional
-    public void deleteReview(Long reviewId) {
-        Review review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đánh giá với ID: " + reviewId));
+                return new PageImpl<>(page, pageable, allUsers.size());
+        }
 
-        // Cập nhật rating của trạm sau khi xóa review
-        ChargingStation station = review.getStation();
-        reviewRepository.delete(review);
+        @Override
+        @Transactional
+        public void toggleUserActive(Long userId) {
+                User user = userRepository.findById(userId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy người dùng với ID: " + userId));
+                user.setIsActive(!user.getIsActive());
+                userRepository.save(user);
+        }
 
-        // Recalculate rating
-        Double avgRating = reviewRepository.getAverageRatingByStationId(station.getStationId());
-        Integer totalReviews = reviewRepository.countByStationId(station.getStationId());
-        station.setRating(BigDecimal.valueOf(avgRating != null ? avgRating : 0));
-        station.setTotalReviews(totalReviews != null ? totalReviews : 0);
-        stationRepository.save(station);
-    }
+        // ═══════════════════════════════════════════════════
+        // QUẢN LÝ ĐÁNH GIÁ
+        // ═══════════════════════════════════════════════════
 
-    // ═══════════════════════════════════════════════════
-    //  MAPPER HELPERS
-    // ═══════════════════════════════════════════════════
+        @Override
+        public Page<ReviewResponse> getAllReviews(String search, Pageable pageable) {
+                Page<Review> reviews = reviewRepository.findAllBySearch(search, pageable);
+                List<ReviewResponse> content = reviews.getContent().stream()
+                                .map(this::toReviewResponse)
+                                .toList();
+                return new PageImpl<>(content, pageable, reviews.getTotalElements());
+        }
 
-    private StationDetailResponse toStationDetailResponse(ChargingStation station) {
-        List<ConnectorTypeResponse> connectors = station.getConnectorTypes().stream()
-                .map(ct -> ConnectorTypeResponse.builder()
-                        .connectorId(ct.getConnectorId())
-                        .type(ct.getType())
-                        .powerKw(ct.getPowerKw())
-                        .totalPorts(ct.getTotalPorts())
-                        .build())
-                .toList();
+        @Override
+        @Transactional
+        public void deleteReview(Long reviewId) {
+                Review review = reviewRepository.findById(reviewId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy đánh giá với ID: " + reviewId));
 
-        return StationDetailResponse.builder()
-                .stationId(station.getStationId())
-                .name(station.getName())
-                .address(station.getAddress())
-                .latitude(station.getLatitude())
-                .longitude(station.getLongitude())
-                .openingHours(station.getOpeningHours())
-                .imageUrl(ImageUtil.getStationImageUrl(station.getImageUrl()))
-                .rating(station.getRating())
-                .totalReviews(station.getTotalReviews())
-                .isActive(station.getIsActive())
-                .connectorTypes(connectors)
-                .build();
-    }
+                // Cập nhật rating của trạm sau khi xóa review
+                ChargingStation station = review.getStation();
+                reviewRepository.delete(review);
 
-    private UserProfileResponse toUserProfileResponse(User user) {
-        return UserProfileResponse.builder()
-                .userId(user.getUserId())
-                .fullName(user.getFullName())
-                .phoneNumber(user.getPhoneNumber())
-                .email(user.getEmail())
-                .gender(user.getGender())
-                .dateOfBirth(user.getDateOfBirth())
-                .avatarUrl(ImageUtil.getAvatarImageUrl(user.getAvatarUrl()))
-                .vehicleModel(user.getVehicleModel())
-                .connectorType(user.getConnectorType())
-                .role(user.getRole())
-                .isActive(user.getIsActive())
-                .createdAt(user.getCreatedAt())
-                .build();
-    }
+                // Recalculate rating
+                Double avgRating = reviewRepository.getAverageRatingByStationId(station.getStationId());
+                Integer totalReviews = reviewRepository.countByStationId(station.getStationId());
+                station.setRating(BigDecimal.valueOf(avgRating != null ? avgRating : 0));
+                station.setTotalReviews(totalReviews != null ? totalReviews : 0);
+                stationRepository.save(station);
+        }
 
-    private ReviewResponse toReviewResponse(Review review) {
-        return ReviewResponse.builder()
-                .reviewId(review.getReviewId())
-                .userId(review.getUser().getUserId())
-                .fullName(review.getUser().getFullName())
-                .avatarUrl(ImageUtil.getAvatarImageUrl(review.getUser().getAvatarUrl()))
-                .stationId(review.getStation().getStationId())
-                .stationName(review.getStation().getName())
-                .rating(review.getRating())
-                .comment(review.getComment())
-                .createdAt(review.getCreatedAt())
-                .build();
-    }
+        // ═══════════════════════════════════════════════════
+        // MAPPER HELPERS
+        // ═══════════════════════════════════════════════════
+
+        private StationDetailResponse toStationDetailResponse(ChargingStation station) {
+                List<ConnectorTypeResponse> connectors = station.getConnectorTypes().stream()
+                                .map(ct -> ConnectorTypeResponse.builder()
+                                                .connectorId(ct.getConnectorId())
+                                                .type(ct.getType())
+                                                .powerKw(ct.getPowerKw())
+                                                .totalPorts(ct.getTotalPorts())
+                                                .build())
+                                .toList();
+
+                return StationDetailResponse.builder()
+                                .stationId(station.getStationId())
+                                .name(station.getName())
+                                .address(station.getAddress())
+                                .latitude(station.getLatitude())
+                                .longitude(station.getLongitude())
+                                .openingHours(station.getOpeningHours())
+                                .imageUrl(ImageUtil.getStationImageUrl(station.getImageUrl()))
+                                .rating(station.getRating())
+                                .totalReviews(station.getTotalReviews())
+                                .isActive(station.getIsActive())
+                                .connectorTypes(connectors)
+                                .build();
+        }
+
+        private UserProfileResponse toUserProfileResponse(User user) {
+                return UserProfileResponse.builder()
+                                .userId(user.getUserId())
+                                .fullName(user.getFullName())
+                                .phoneNumber(user.getPhoneNumber())
+                                .email(user.getEmail())
+                                .gender(user.getGender())
+                                .dateOfBirth(user.getDateOfBirth())
+                                .avatarUrl(ImageUtil.getAvatarImageUrl(user.getAvatarUrl()))
+                                .vehicleModel(user.getVehicleModel())
+                                .connectorType(user.getConnectorType())
+                                .role(user.getRole())
+                                .isActive(user.getIsActive())
+                                .createdAt(user.getCreatedAt())
+                                .build();
+        }
+
+        private ReviewResponse toReviewResponse(Review review) {
+                return ReviewResponse.builder()
+                                .reviewId(review.getReviewId())
+                                .userId(review.getUser().getUserId())
+                                .fullName(review.getUser().getFullName())
+                                .avatarUrl(ImageUtil.getAvatarImageUrl(review.getUser().getAvatarUrl()))
+                                .stationId(review.getStation().getStationId())
+                                .stationName(review.getStation().getName())
+                                .rating(review.getRating())
+                                .comment(review.getComment())
+                                .createdAt(review.getCreatedAt())
+                                .build();
+        }
 }
