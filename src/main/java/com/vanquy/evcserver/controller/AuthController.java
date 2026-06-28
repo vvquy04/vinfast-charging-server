@@ -26,14 +26,14 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Object>> sendOtp(
             @Valid @RequestBody SendOtpRequest request
     ) {
-        authService.sendOtp(request);
+        String otp = authService.sendOtp(request);
 
         String maskedPhone = request.getPhoneNumber().substring(0, 4)
                 + "****"
                 + request.getPhoneNumber().substring(8);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Mã OTP đã được gửi đến " + maskedPhone)
+                ApiResponse.success("Mã OTP đã được gửi đến " + maskedPhone, java.util.Map.of("otp", otp))
         );
     }
 

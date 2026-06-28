@@ -14,7 +14,7 @@ public interface AuthService {
     /**
      * Gửi mã OTP đến số điện thoại.
      */
-    void sendOtp(SendOtpRequest request);
+    String sendOtp(SendOtpRequest request);
 
     /**
      * Xác thực OTP, đánh dấu SĐT đã được xác thực tạm thời.

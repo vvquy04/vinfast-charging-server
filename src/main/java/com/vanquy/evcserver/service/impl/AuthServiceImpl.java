@@ -27,12 +27,9 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
-    public void sendOtp(SendOtpRequest request) {
+    public String sendOtp(SendOtpRequest request) {
         String phoneNumber = request.getPhoneNumber();
-        if (otpUtil.hasActiveOtp(phoneNumber)) {
-            throw new BadRequestException("Mã OTP đã được gửi. Vui lòng chờ hết hạn trước khi gửi lại.");
-        }
-        otpUtil.generateOtp(phoneNumber);
+        return otpUtil.generateOtp(phoneNumber);
     }
 
     @Override
