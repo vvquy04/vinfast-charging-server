@@ -23,7 +23,8 @@ public interface StationService {
     List<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
-            Integer minPowerKw, Double minRating
+            Integer minPowerKw, Integer maxPowerKw,
+            Double minRating
     );
 
     /**

@@ -28,11 +28,12 @@ public class StationController {
             @RequestParam(defaultValue = "10") double radius,
             @RequestParam(required = false) String connectorType,
             @RequestParam(required = false) Integer minPowerKw,
+            @RequestParam(required = false) Integer maxPowerKw,
             @RequestParam(required = false) Double minRating
     ) {
         List<StationSummaryResponse> data = stationService.searchStations(
                 latitude, longitude, radius, connectorType,
-                minPowerKw, minRating
+                minPowerKw, maxPowerKw, minRating
         );
         return ResponseEntity.ok(ApiResponse.success("OK", data));
     }

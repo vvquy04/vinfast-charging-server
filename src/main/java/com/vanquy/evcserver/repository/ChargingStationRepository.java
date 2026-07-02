@@ -31,6 +31,7 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
               AND s.longitude BETWEEN :minLng AND :maxLng
               AND (:connectorType IS NULL OR ct.type = :connectorType)
               AND (:minPowerKw IS NULL OR ct.power_kw >= :minPowerKw)
+              AND (:maxPowerKw IS NULL OR ct.power_kw <= :maxPowerKw)
               AND (:minRating IS NULL OR s.rating >= :minRating)
             HAVING distance <= :radius
             ORDER BY distance ASC
@@ -42,6 +43,7 @@ public interface ChargingStationRepository extends JpaRepository<ChargingStation
             @Param("radius") double radius,
             @Param("connectorType") String connectorType,
             @Param("minPowerKw") Integer minPowerKw,
+            @Param("maxPowerKw") Integer maxPowerKw,
             @Param("minRating") Double minRating,
             @Param("minLat") double minLat,
             @Param("maxLat") double maxLat,

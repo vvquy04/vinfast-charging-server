@@ -25,7 +25,8 @@ public class StationServiceImpl implements StationService {
     public List<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
-            Integer minPowerKw, Double minRating
+            Integer minPowerKw, Integer maxPowerKw,
+            Double minRating
     ) {
         // 1 độ lệch Lat/Lng tương đương với khoảng 111km, 
         // tính toán khung Bounding Box bọc lấy bán kính (giảm tải MySQL)
@@ -43,7 +44,7 @@ public class StationServiceImpl implements StationService {
 
         List<Object[]> results = stationRepository.findNearbyStationsFiltered(
                 latitude, longitude, radius, normalizedConnectorType,
-                minPowerKw, minRating,
+                minPowerKw, maxPowerKw, minRating,
                 minLat, maxLat, minLng, maxLng
         );
 
