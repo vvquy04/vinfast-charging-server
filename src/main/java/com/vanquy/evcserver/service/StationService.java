@@ -11,11 +11,11 @@ import java.util.List;
 public interface StationService {
 
     /**
-     * Tìm trạm sạc gần vị trí user (Haversine).
+     * Tìm trạm sạc gần vị trí user .
      *
      * @param latitude      vĩ độ user
      * @param longitude     kinh độ user
-     * @param radius        bán kính tìm kiếm (km), default 10
+     * @param radius        bán kính tìm kiếm (km)
      * @param connectorType lọc theo loại cổng sạc (nullable)
      * @param minPowerKw    lọc theo công suất sạc tối thiểu (nullable)
      * @param minRating     lọc theo điểm đánh giá tối thiểu (nullable)

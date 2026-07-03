@@ -12,7 +12,7 @@ import java.util.List;
 public interface ChargingStationRepository extends JpaRepository<ChargingStation, Long> {
 
     /**
-     * Tìm trạm sạc trong bán kính (km) dùng Haversine formula.
+     * Tìm trạm sạc trong bán kính (km) .
      * Hỗ trợ lọc tùy chọn theo: loại cổng sạc, công suất tối thiểu, rating tối thiểu.
      * Tất cả filter đều nullable — nếu null thì bỏ qua điều kiện đó.
      */
