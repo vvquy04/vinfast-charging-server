@@ -29,4 +29,5 @@ public class UserProfileResponse {
     private Boolean isActive;
 
     private LocalDateTime createdAt;
+    private Integer rewardPoints;
 }

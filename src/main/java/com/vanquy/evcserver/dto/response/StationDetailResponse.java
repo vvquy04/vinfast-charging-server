@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * DTO chi tiết trạm sạc (GET /api/stations/{id}).
@@ -33,4 +34,12 @@ public class StationDetailResponse {
     private Boolean isActive;
 
     private List<ConnectorTypeResponse> connectorTypes;
+
+    // ── Trạng thái check-in thời gian thực ──
+    private String crowdStatus;
+    private String statusUpdatedAt;
+    private String statusUpdatedByName;
+
+    // ── Biểu đồ Popular Times (7 ngày x 24 giờ) ──
+    private Map<String, List<Integer>> popularTimes;
 }

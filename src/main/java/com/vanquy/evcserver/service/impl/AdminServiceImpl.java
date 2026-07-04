@@ -304,6 +304,7 @@ public class AdminServiceImpl implements AdminService {
                                 .role(user.getRole())
                                 .isActive(user.getIsActive())
                                 .createdAt(user.getCreatedAt())
+                                .rewardPoints(user.getRewardPoints() != null ? user.getRewardPoints() : 0)
                                 .build();
         }
 

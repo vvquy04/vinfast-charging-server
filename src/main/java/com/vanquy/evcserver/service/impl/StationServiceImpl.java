@@ -1,18 +1,29 @@
 package com.vanquy.evcserver.service.impl;
 
 import com.vanquy.evcserver.dto.response.*;
+import com.vanquy.evcserver.exception.BadRequestException;
 import com.vanquy.evcserver.exception.ResourceNotFoundException;
 import com.vanquy.evcserver.model.ChargingStation;
 import com.vanquy.evcserver.model.ConnectorType;
+import com.vanquy.evcserver.model.StationCheckin;
+import com.vanquy.evcserver.model.User;
 import com.vanquy.evcserver.repository.ChargingStationRepository;
 import com.vanquy.evcserver.repository.ConnectorTypeRepository;
+import com.vanquy.evcserver.repository.StationCheckinRepository;
+import com.vanquy.evcserver.repository.UserRepository;
 import com.vanquy.evcserver.service.StationService;
+import com.vanquy.evcserver.util.ImageUtil;
+import com.vanquy.evcserver.util.PopularTimesUtil;
+import com.vanquy.evcserver.util.TopsisUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import com.vanquy.evcserver.util.ImageUtil;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,38 +31,85 @@ public class StationServiceImpl implements StationService {
 
     private final ChargingStationRepository stationRepository;
     private final ConnectorTypeRepository connectorTypeRepository;
+    private final StationCheckinRepository checkinRepository;
+    private final UserRepository userRepository;
+
+    /** Số điểm thưởng cộng thêm cho mỗi lần check-in hợp lệ */
+    private static final int REWARD_POINTS_PER_CHECKIN = 10;
+
+    /** Thời gian tối thiểu giữa 2 lần check-in cùng trạm (phút) */
+    private static final int CHECKIN_COOLDOWN_MINUTES = 10;
+
+    // ═══════════════════════════════════════════════════
+    // TÌM KIẾM TRẠM SẠC (có hỗ trợ TOPSIS)
+    // ═══════════════════════════════════════════════════
 
     @Override
     public List<StationSummaryResponse> searchStations(
             double latitude, double longitude,
             double radius, String connectorType,
             Integer minPowerKw, Integer maxPowerKw,
-            Double minRating
+            Double minRating,
+            boolean useTopsis,
+            double weightDistance, double weightPower,
+            double weightOccupancy, double weightRating
     ) {
-        // 1 độ lệch Lat/Lng tương đương với khoảng 111km, 
-        // tính toán khung Bounding Box bọc lấy bán kính (giảm tải MySQL)
-        double deltaLat = radius / 111.12; 
+        // 1. Tính Bounding Box
+        double deltaLat = radius / 111.12;
         double deltaLng = radius / (111.12 * Math.cos(Math.toRadians(latitude)));
 
-        double minLat = latitude - deltaLat;
-        double maxLat = latitude + deltaLat;
-        double minLng = longitude - deltaLng;
-        double maxLng = longitude + deltaLng;
-
-        // Chuẩn hóa connectorType: chuỗi rỗng → null
         String normalizedConnectorType = (connectorType != null && !connectorType.isBlank())
                 ? connectorType : null;
 
         List<Object[]> results = stationRepository.findNearbyStationsFiltered(
                 latitude, longitude, radius, normalizedConnectorType,
                 minPowerKw, maxPowerKw, minRating,
-                minLat, maxLat, minLng, maxLng
+                latitude - deltaLat, latitude + deltaLat,
+                longitude - deltaLng, longitude + deltaLng
         );
 
-        return results.stream()
+        // 2. Map sang DTO
+        List<StationSummaryResponse> stations = results.stream()
                 .map(this::mapToStationSummary)
-                .toList();
+                .collect(Collectors.toList());
+
+        // 3. Truy vấn batch trạng thái check-in mới nhất cho tất cả các trạm
+        if (!stations.isEmpty()) {
+            List<Long> stationIds = stations.stream()
+                    .map(StationSummaryResponse::getStationId)
+                    .toList();
+
+            Map<Long, StationCheckin> latestCheckins = getLatestCheckinsMap(stationIds);
+
+            for (StationSummaryResponse s : stations) {
+                StationCheckin checkin = latestCheckins.get(s.getStationId());
+                if (checkin != null) {
+                    s.setCrowdStatus(checkin.getStatus());
+                    s.setStatusUpdatedAt(formatTimeAgo(checkin.getCreatedAt()));
+                    s.setStatusUpdatedByName(checkin.getUser().getFullName());
+                } else {
+                    s.setCrowdStatus(null);
+                }
+            }
+        }
+
+        // 4. Nếu bật TOPSIS → tính Match Score và sắp xếp theo điểm giảm dần
+        if (useTopsis && !stations.isEmpty()) {
+            TopsisUtil.calculateMatchScores(
+                    stations, weightDistance, weightPower, weightOccupancy, weightRating
+            );
+            stations.sort((a, b) -> Integer.compare(
+                    b.getMatchScore() != null ? b.getMatchScore() : 0,
+                    a.getMatchScore() != null ? a.getMatchScore() : 0
+            ));
+        }
+
+        return stations;
     }
+
+    // ═══════════════════════════════════════════════════
+    // CHI TIẾT TRẠM SẠC (kèm Popular Times + Crowd Status)
+    // ═══════════════════════════════════════════════════
 
     @Override
     public StationDetailResponse getStationDetail(Long stationId) {
@@ -62,7 +120,7 @@ public class StationServiceImpl implements StationService {
                 .map(this::mapToConnectorResponse)
                 .toList();
 
-        return StationDetailResponse.builder()
+        StationDetailResponse.StationDetailResponseBuilder builder = StationDetailResponse.builder()
                 .stationId(station.getStationId())
                 .name(station.getName())
                 .address(station.getAddress())
@@ -73,23 +131,84 @@ public class StationServiceImpl implements StationService {
                 .rating(station.getRating())
                 .totalReviews(station.getTotalReviews())
                 .isActive(station.getIsActive())
-                .connectorTypes(connectors)
-                .build();
+                .connectorTypes(connectors);
+
+        // Truy vấn trạng thái check-in mới nhất
+        Optional<StationCheckin> latestCheckin =
+                checkinRepository.findFirstByStationStationIdOrderByCreatedAtDesc(stationId);
+
+        if (latestCheckin.isPresent()) {
+            StationCheckin c = latestCheckin.get();
+            builder.crowdStatus(c.getStatus());
+            builder.statusUpdatedAt(formatTimeAgo(c.getCreatedAt()));
+            builder.statusUpdatedByName(c.getUser().getFullName());
+        } else {
+            builder.crowdStatus(null);
+        }
+
+        // Popular Times (dữ liệu 7 ngày x 24 giờ - lai trộn check-in thực tế)
+        List<Object[]> checkinCounts = checkinRepository.countCheckinsGroupByDayAndHour(stationId);
+        builder.popularTimes(PopularTimesUtil.getWeeklyPopularTimes(stationId, checkinCounts));
+
+        return builder.build();
     }
 
-    // ─── Private Helpers ─────────────────────────────
+    // ═══════════════════════════════════════════════════
+    // CHECK-IN & BÁO CÁO TRẠNG THÁI
+    // ═══════════════════════════════════════════════════
+
+    @Override
+    @Transactional
+    public void checkin(Long userId, Long stationId, String status) {
+        // 1. Validate trạng thái
+        if (!Set.of("EMPTY", "MODERATE", "BUSY", "MAINTENANCE").contains(status)) {
+            throw new BadRequestException(
+                    "Trạng thái không hợp lệ. Chỉ chấp nhận: EMPTY, MODERATE, BUSY, MAINTENANCE");
+        }
+
+        // 2. Kiểm tra trạm sạc tồn tại
+        ChargingStation station = stationRepository.findById(stationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Trạm sạc", "stationId", stationId));
+
+        // 3. Kiểm tra người dùng tồn tại
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "userId", userId));
+
+        // 4. Chống spam: kiểm tra thời gian check-in gần nhất
+        LocalDateTime cooldownTime = LocalDateTime.now().minusMinutes(CHECKIN_COOLDOWN_MINUTES);
+        Optional<StationCheckin> recentCheckin =
+                checkinRepository.findFirstByUserUserIdAndStationStationIdAndCreatedAtAfterOrderByCreatedAtDesc(
+                        userId, stationId, cooldownTime);
+
+        if (recentCheckin.isPresent()) {
+            throw new BadRequestException(
+                    "Bạn chỉ có thể check-in tại cùng một trạm sạc mỗi " + CHECKIN_COOLDOWN_MINUTES + " phút");
+        }
+
+        // 5. Tạo bản ghi check-in mới
+        StationCheckin checkin = StationCheckin.builder()
+                .user(user)
+                .station(station)
+                .status(status)
+                .build();
+        checkinRepository.save(checkin);
+
+        // 6. Cộng điểm thưởng cho người dùng
+        int currentPoints = user.getRewardPoints() != null ? user.getRewardPoints() : 0;
+        user.setRewardPoints(currentPoints + REWARD_POINTS_PER_CHECKIN);
+        userRepository.save(user);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ═══════════════════════════════════════════════════
 
     /**
      * Map native query result (Object[]) → StationSummaryResponse.
-     * Thứ tự cột theo SELECT trong native query:
-     * station_id, name, address, latitude, longitude,
-     * opening_hours, image_url, rating, total_reviews,
-     * is_active, created_at, distance
      */
     private StationSummaryResponse mapToStationSummary(Object[] row) {
         Long stationId = ((Number) row[0]).longValue();
 
-        // Lấy connectorTypes cho station này
         List<ConnectorType> connectors = connectorTypeRepository.findByStationStationId(stationId);
         List<ConnectorTypeResponse> connectorResponses = connectors.stream()
                 .map(this::mapToConnectorResponse)
@@ -116,5 +235,32 @@ public class StationServiceImpl implements StationService {
                 .powerKw(ct.getPowerKw())
                 .totalPorts(ct.getTotalPorts())
                 .build();
+    }
+
+    /**
+     * Batch truy vấn check-in mới nhất cho danh sách trạm sạc → Map<stationId, StationCheckin>.
+     */
+    private Map<Long, StationCheckin> getLatestCheckinsMap(List<Long> stationIds) {
+        List<StationCheckin> latestCheckins = checkinRepository.findLatestCheckinsByStationIds(stationIds);
+        Map<Long, StationCheckin> map = new HashMap<>();
+        for (StationCheckin c : latestCheckins) {
+            map.put(c.getStation().getStationId(), c);
+        }
+        return map;
+    }
+
+    /**
+     * Định dạng thời gian kiểu "X phút trước", "X giờ trước", v.v.
+     */
+    private String formatTimeAgo(LocalDateTime time) {
+        if (time == null) return null;
+        Duration duration = Duration.between(time, LocalDateTime.now());
+        long minutes = duration.toMinutes();
+        if (minutes < 1) return "Vừa xong";
+        if (minutes < 60) return minutes + " phút trước";
+        long hours = duration.toHours();
+        if (hours < 24) return hours + " giờ trước";
+        long days = duration.toDays();
+        return days + " ngày trước";
     }
 }

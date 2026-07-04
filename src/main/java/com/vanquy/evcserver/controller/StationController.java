@@ -4,11 +4,13 @@ import com.vanquy.evcserver.dto.response.ApiResponse;
 import com.vanquy.evcserver.dto.response.StationDetailResponse;
 import com.vanquy.evcserver.dto.response.StationSummaryResponse;
 import com.vanquy.evcserver.service.StationService;
+import com.vanquy.evcserver.util.SecurityUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/stations")
@@ -18,8 +20,9 @@ public class StationController {
     private final StationService stationService;
 
     /**
-     * Tìm trạm sạc gần vị trí (Haversine) với bộ lọc tùy chọn.
-     * GET /api/stations?latitude=10.84&longitude=106.84&radius=10&connectorType=CCS2&minPowerKw=50&minRating=4.0
+     * Tìm trạm sạc gần vị trí (Haversine) với bộ lọc tùy chọn + TOPSIS.
+     * GET /api/stations?latitude=...&longitude=...&radius=10
+     *     &useTopsis=true&weightDistance=1&weightPower=5&weightOccupancy=1&weightRating=1
      */
     @GetMapping
     public ResponseEntity<ApiResponse<List<StationSummaryResponse>>> searchStations(
@@ -29,17 +32,23 @@ public class StationController {
             @RequestParam(required = false) String connectorType,
             @RequestParam(required = false) Integer minPowerKw,
             @RequestParam(required = false) Integer maxPowerKw,
-            @RequestParam(required = false) Double minRating
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(defaultValue = "false") boolean useTopsis,
+            @RequestParam(defaultValue = "1.0") double weightDistance,
+            @RequestParam(defaultValue = "1.0") double weightPower,
+            @RequestParam(defaultValue = "1.0") double weightOccupancy,
+            @RequestParam(defaultValue = "1.0") double weightRating
     ) {
         List<StationSummaryResponse> data = stationService.searchStations(
                 latitude, longitude, radius, connectorType,
-                minPowerKw, maxPowerKw, minRating
+                minPowerKw, maxPowerKw, minRating,
+                useTopsis, weightDistance, weightPower, weightOccupancy, weightRating
         );
         return ResponseEntity.ok(ApiResponse.success("OK", data));
     }
 
     /**
-     * Xem chi tiết trạm sạc.
+     * Xem chi tiết trạm sạc (kèm Popular Times + Crowd Status).
      * GET /api/stations/{stationId}
      */
     @GetMapping("/{stationId}")
@@ -48,5 +57,24 @@ public class StationController {
     ) {
         StationDetailResponse data = stationService.getStationDetail(stationId);
         return ResponseEntity.ok(ApiResponse.success("OK", data));
+    }
+
+    /**
+     * Check-in và báo cáo trạng thái trạm sạc.
+     * POST /api/stations/{stationId}/checkin
+     * Body: { "status": "EMPTY" | "MODERATE" | "BUSY" | "MAINTENANCE" }
+     */
+    @PostMapping("/{stationId}/checkin")
+    public ResponseEntity<ApiResponse<String>> checkin(
+            @PathVariable Long stationId,
+            @RequestBody Map<String, String> body
+    ) {
+        Long userId = SecurityUtil.getCurrentUserId();
+        String status = body.getOrDefault("status", "EMPTY");
+
+        stationService.checkin(userId, stationId, status);
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Check-in thành công! Bạn đã nhận được 10 điểm thưởng.", null));
     }
 }

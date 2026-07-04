@@ -63,6 +63,10 @@ public class User {
     @Builder.Default
     private Boolean isActive = true;
 
+    @Column(name = "reward_points")
+    @Builder.Default
+    private Integer rewardPoints = 0;
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

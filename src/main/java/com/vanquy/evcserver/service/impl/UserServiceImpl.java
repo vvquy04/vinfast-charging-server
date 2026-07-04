@@ -80,6 +80,7 @@ public class UserServiceImpl implements UserService {
                 .vehicleModel(user.getVehicleModel())
                 .connectorType(user.getConnectorType())
                 .createdAt(user.getCreatedAt())
+                .rewardPoints(user.getRewardPoints() != null ? user.getRewardPoints() : 0)
                 .build();
     }
 

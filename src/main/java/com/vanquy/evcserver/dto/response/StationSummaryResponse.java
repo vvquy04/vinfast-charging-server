@@ -29,4 +29,12 @@ public class StationSummaryResponse {
     private Integer totalReviews;
     private Double distance;
     private List<ConnectorTypeResponse> connectorTypes;
+
+    // ── Trạng thái check-in thời gian thực ──
+    private String crowdStatus;
+    private String statusUpdatedAt;
+    private String statusUpdatedByName;
+
+    // ── Điểm phù hợp TOPSIS ──
+    private Integer matchScore;
 }
