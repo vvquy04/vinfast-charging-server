@@ -20,7 +20,7 @@ public class StationController {
     private final StationService stationService;
 
     /**
-     * Tìm trạm sạc gần vị trí (Haversine) với bộ lọc tùy chọn + TOPSIS.
+     * Tìm trạm sạc gần vị trí với bộ lọc tùy chọn + TOPSIS.
      * GET /api/stations?latitude=...&longitude=...&radius=10
      *     &useTopsis=true&weightDistance=1&weightPower=5&weightOccupancy=1&weightRating=1
      */
@@ -60,7 +60,7 @@ public class StationController {
     }
 
     /**
-     * Check-in và báo cáo trạng thái trạm sạc.
+     * Check-in trạm sạc.
      * POST /api/stations/{stationId}/checkin
      * Body: { "status": "EMPTY" | "MODERATE" | "BUSY" | "MAINTENANCE" }
      */

@@ -49,4 +49,42 @@ public interface StationCheckinRepository extends JpaRepository<StationCheckin, 
             GROUP BY DAYOFWEEK(created_at), HOUR(created_at)
             """, nativeQuery = true)
     List<Object[]> countCheckinsGroupByDayAndHour(@Param("stationId") Long stationId);
+
+    // ═══════════════════════════════════════════════════
+    //  THỐNG KÊ ADMIN DASHBOARD
+    // ═══════════════════════════════════════════════════
+
+    /**
+     * Đếm số lượt check-in nhóm theo trạng thái (EMPTY, MODERATE, BUSY, MAINTENANCE).
+     */
+    @Query(value = """
+            SELECT status, COUNT(*) AS count
+            FROM station_checkins
+            GROUP BY status
+            """, nativeQuery = true)
+    List<Object[]> countCheckinsByStatus();
+
+    /**
+     * Đếm số lượt check-in nhóm theo tháng (yyyy-MM).
+     */
+    @Query(value = """
+            SELECT DATE_FORMAT(created_at, '%Y-%m') AS month, COUNT(*) AS count
+            FROM station_checkins
+            GROUP BY DATE_FORMAT(created_at, '%Y-%m')
+            ORDER BY month
+            """, nativeQuery = true)
+    List<Object[]> countCheckinsByMonth();
+
+    /**
+     * Top N trạm sạc có nhiều lượt check-in nhất.
+     */
+    @Query(value = """
+            SELECT sc.station_id, cs.name, COUNT(*) AS total
+            FROM station_checkins sc
+            JOIN charging_stations cs ON sc.station_id = cs.station_id
+            GROUP BY sc.station_id, cs.name
+            ORDER BY total DESC
+            LIMIT :limit
+            """, nativeQuery = true)
+    List<Object[]> findTopCheckinStations(@Param("limit") int limit);
 }

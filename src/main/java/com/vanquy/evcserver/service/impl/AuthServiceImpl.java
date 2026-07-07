@@ -78,10 +78,10 @@ public class AuthServiceImpl implements AuthService {
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .email(request.getEmail())
-                .gender(request.getGender())
+                .gender(com.vanquy.evcserver.util.GenderUtil.standardize(request.getGender()))
                 .dateOfBirth(request.getDateOfBirth())
                 .vehicleModel(request.getVehicleModel())
-                .connectorType(request.getConnectorType())
+                .connectorType(com.vanquy.evcserver.util.ConnectorUtil.standardize(request.getConnectorType()))
                 .avatarUrl(ImageUtil.sanitizeAvatarImage(request.getAvatarUrl()))
                 .build();
 

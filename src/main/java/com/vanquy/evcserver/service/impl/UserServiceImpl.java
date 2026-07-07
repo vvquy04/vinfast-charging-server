@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
             user.setEmail(request.getEmail());
         }
         if (request.getGender() != null) {
-            user.setGender(request.getGender());
+            user.setGender(com.vanquy.evcserver.util.GenderUtil.standardize(request.getGender()));
         }
         if (request.getDateOfBirth() != null) {
             user.setDateOfBirth(request.getDateOfBirth());
@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService {
             user.setVehicleModel(request.getVehicleModel());
         }
         if (request.getConnectorType() != null) {
-            user.setConnectorType(request.getConnectorType());
+            user.setConnectorType(com.vanquy.evcserver.util.ConnectorUtil.standardize(request.getConnectorType()));
         }
 
         User savedUser = userRepository.save(user);

@@ -54,7 +54,7 @@ public class StationServiceImpl implements StationService {
             double weightDistance, double weightPower,
             double weightOccupancy, double weightRating
     ) {
-        // 1. Tính Bounding Box
+        //Bounding Box
         double deltaLat = radius / 111.12;
         double deltaLng = radius / (111.12 * Math.cos(Math.toRadians(latitude)));
 
@@ -68,12 +68,12 @@ public class StationServiceImpl implements StationService {
                 longitude - deltaLng, longitude + deltaLng
         );
 
-        // 2. Map sang DTO
+        //Map sang DTO
         List<StationSummaryResponse> stations = results.stream()
                 .map(this::mapToStationSummary)
                 .collect(Collectors.toList());
 
-        // 3. Truy vấn batch trạng thái check-in mới nhất cho tất cả các trạm
+        //Truy vấn batch trạng thái check-in mới nhất cho tất cả các trạm
         if (!stations.isEmpty()) {
             List<Long> stationIds = stations.stream()
                     .map(StationSummaryResponse::getStationId)
@@ -93,7 +93,7 @@ public class StationServiceImpl implements StationService {
             }
         }
 
-        // 4. Nếu bật TOPSIS → tính Match Score và sắp xếp theo điểm giảm dần
+        //Nếu bật TOPSIS => tính Match Score, sắp xếp theo điểm giảm dần và lọc ra các trạm phù hợp nhất
         if (useTopsis && !stations.isEmpty()) {
             TopsisUtil.calculateMatchScores(
                     stations, weightDistance, weightPower, weightOccupancy, weightRating
@@ -102,6 +102,17 @@ public class StationServiceImpl implements StationService {
                     b.getMatchScore() != null ? b.getMatchScore() : 0,
                     a.getMatchScore() != null ? a.getMatchScore() : 0
             ));
+
+            // Chỉ hiển thị các trạm sạc phù hợp nhất (Match Score >= 50%), luôn giữ lại ít nhất 5 trạm tốt nhất
+            int minKeep = Math.min(5, stations.size());
+            List<StationSummaryResponse> filteredStations = new java.util.ArrayList<>();
+            for (int i = 0; i < stations.size(); i++) {
+                StationSummaryResponse s = stations.get(i);
+                if (i < minKeep || (s.getMatchScore() != null && s.getMatchScore() >= 50)) {
+                    filteredStations.add(s);
+                }
+            }
+            stations = filteredStations;
         }
 
         return stations;
@@ -160,21 +171,21 @@ public class StationServiceImpl implements StationService {
     @Override
     @Transactional
     public void checkin(Long userId, Long stationId, String status) {
-        // 1. Validate trạng thái
+        //Validate trạng thái
         if (!Set.of("EMPTY", "MODERATE", "BUSY", "MAINTENANCE").contains(status)) {
             throw new BadRequestException(
                     "Trạng thái không hợp lệ. Chỉ chấp nhận: EMPTY, MODERATE, BUSY, MAINTENANCE");
         }
 
-        // 2. Kiểm tra trạm sạc tồn tại
+        //Kiểm tra trạm sạc tồn tại
         ChargingStation station = stationRepository.findById(stationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Trạm sạc", "stationId", stationId));
 
-        // 3. Kiểm tra người dùng tồn tại
+        //Kiểm tra người dùng tồn tại
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Người dùng", "userId", userId));
 
-        // 4. Chống spam: kiểm tra thời gian check-in gần nhất
+        //Kiểm tra thời gian check-in gần nhất
         LocalDateTime cooldownTime = LocalDateTime.now().minusMinutes(CHECKIN_COOLDOWN_MINUTES);
         Optional<StationCheckin> recentCheckin =
                 checkinRepository.findFirstByUserUserIdAndStationStationIdAndCreatedAtAfterOrderByCreatedAtDesc(
@@ -185,7 +196,7 @@ public class StationServiceImpl implements StationService {
                     "Bạn chỉ có thể check-in tại cùng một trạm sạc mỗi " + CHECKIN_COOLDOWN_MINUTES + " phút");
         }
 
-        // 5. Tạo bản ghi check-in mới
+        //Tạo bản ghi check-in mới
         StationCheckin checkin = StationCheckin.builder()
                 .user(user)
                 .station(station)
@@ -193,7 +204,7 @@ public class StationServiceImpl implements StationService {
                 .build();
         checkinRepository.save(checkin);
 
-        // 6. Cộng điểm thưởng cho người dùng
+        //Cộng điểm thưởng cho người dùng
         int currentPoints = user.getRewardPoints() != null ? user.getRewardPoints() : 0;
         user.setRewardPoints(currentPoints + REWARD_POINTS_PER_CHECKIN);
         userRepository.save(user);
@@ -250,7 +261,7 @@ public class StationServiceImpl implements StationService {
     }
 
     /**
-     * Định dạng thời gian kiểu "X phút trước", "X giờ trước", v.v.
+     * Định dạng thời gian 
      */
     private String formatTimeAgo(LocalDateTime time) {
         if (time == null) return null;

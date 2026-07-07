@@ -46,15 +46,15 @@ public class TopsisUtil {
             return;
         }
 
-        // ── Bước 1: Xây dựng ma trận quyết định ──
+        // Xây dựng ma trận quyết định ──
         double[][] x = new double[m][CRITERIA_COUNT];
         for (int i = 0; i < m; i++) {
             StationSummaryResponse s = stations.get(i);
 
-            // C0: Distance (km)
+            // x0: Distance (km)
             x[i][0] = s.getDistance() != null ? s.getDistance() : 0.0;
 
-            // C1: Max Power (kW) từ danh sách connector
+            // x1: Max Power (kW) từ danh sách connector
             double maxPower = 0.0;
             if (s.getConnectorTypes() != null) {
                 maxPower = s.getConnectorTypes().stream()
@@ -64,14 +64,14 @@ public class TopsisUtil {
             }
             x[i][1] = maxPower;
 
-            // C2: Occupancy (ánh xạ từ crowdStatus)
+            // x2: Occupancy (ánh xạ từ crowdStatus)
             x[i][2] = mapStatusToOccupancy(s.getCrowdStatus());
 
-            // C3: Rating
+            // x3: Rating
             x[i][3] = s.getRating() != null ? s.getRating().doubleValue() : 0.0;
         }
 
-        // ── Bước 2: Chuẩn hóa vector (Vector Normalization) ──
+        // Chuẩn hóa vector
         double[] colNorm = new double[CRITERIA_COUNT];
         for (int j = 0; j < CRITERIA_COUNT; j++) {
             double sumSq = 0.0;
@@ -88,7 +88,7 @@ public class TopsisUtil {
             }
         }
 
-        // ── Bước 3: Chuẩn hóa có trọng số ──
+        // Chuẩn hóa có trọng số ──
         double sumWeights = wDistance + wPower + wOccupancy + wRating;
         double[] weights = {
                 wDistance / sumWeights,
@@ -104,27 +104,27 @@ public class TopsisUtil {
             }
         }
 
-        // ── Bước 4: Xác định giải pháp lý tưởng (A+) và phản lý tưởng (A-) ──
+        //Xác định giải pháp lý tưởng (A+) và phản lý tưởng (A-)
         double[] aPlus = new double[CRITERIA_COUNT];
         double[] aMinus = new double[CRITERIA_COUNT];
 
-        // C0: Distance — cost criterion (min = best)
+        // x0: Distance — cost criterion (min = best)
         aPlus[0] = getMin(v, 0);
         aMinus[0] = getMax(v, 0);
 
-        // C1: Power — benefit criterion (max = best)
+        // x1: Power — benefit criterion (max = best)
         aPlus[1] = getMax(v, 1);
         aMinus[1] = getMin(v, 1);
 
-        // C2: Occupancy — cost criterion (min = best)
+        // x2: Occupancy — cost criterion (min = best)
         aPlus[2] = getMin(v, 2);
         aMinus[2] = getMax(v, 2);
 
-        // C3: Rating — benefit criterion (max = best)
+        // x3: Rating — benefit criterion (max = best)
         aPlus[3] = getMax(v, 3);
         aMinus[3] = getMin(v, 3);
 
-        // ── Bước 5: Tính khoảng cách Euclide và hệ số gần sát (Closeness Coefficient) ──
+        //Tính khoảng cách Euclide và hệ số gần sát
         for (int i = 0; i < m; i++) {
             double sPlus = 0.0;
             double sMinus = 0.0;
@@ -142,7 +142,17 @@ public class TopsisUtil {
                 closeness = 0.5;
             }
 
-            stations.get(i).setMatchScore((int) Math.round(closeness * 100.0));
+            double rawScore = closeness * 100.0;
+
+            
+            double distance = stations.get(i).getDistance() != null ? stations.get(i).getDistance() : 0.0;
+            double penalty = 1.0;
+            if (distance > 5.0) {
+                // Giảm tuyến tính điểm số khi khoảng cách vượt quá 5km, về tối thiểu 10% tại mốc 20km
+                penalty = Math.max(0.1, 1.0 - (distance - 5.0) / 15.0);
+            }
+
+            stations.get(i).setMatchScore((int) Math.round(rawScore * penalty));
         }
     }
 

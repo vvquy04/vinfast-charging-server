@@ -31,6 +31,7 @@ public class AdminServiceImpl implements AdminService {
         private final UserRepository userRepository;
         private final ReviewRepository reviewRepository;
         private final UserStationHistoryRepository historyRepository;
+        private final StationCheckinRepository checkinRepository;
 
         // ═══════════════════════════════════════════════════
         // DASHBOARD
@@ -42,6 +43,7 @@ public class AdminServiceImpl implements AdminService {
                 long totalUsers = userRepository.count();
                 long totalReviews = reviewRepository.count();
                 long totalVisits = historyRepository.count();
+                long totalCheckins = checkinRepository.count();
 
                 // Thống kê trạm theo quận/huyện (lấy phần trước dấu " - " trong tên trạm)
                 List<ChargingStation> allStations = stationRepository.findAll();
@@ -78,13 +80,56 @@ public class AdminServiceImpl implements AdminService {
                                                 .build())
                                 .toList();
 
+                // ─── THỐNG KÊ CHECK-IN ───────────────────────────
+
+                // Bản đồ chuyển đổi mã trạng thái → nhãn tiếng Việt
+                Map<String, String> statusLabelMap = Map.of(
+                        "EMPTY", "Trống chỗ",
+                        "MODERATE", "Vừa phải",
+                        "BUSY", "Đang bận / Đầy",
+                        "MAINTENANCE", "Bảo trì"
+                );
+
+                // 1. Phân bố check-in theo trạng thái
+                List<AdminDashboardStatsResponse.CheckinStatusCount> checkinsByStatus =
+                        checkinRepository.countCheckinsByStatus().stream()
+                                .map(row -> AdminDashboardStatsResponse.CheckinStatusCount.builder()
+                                        .status((String) row[0])
+                                        .label(statusLabelMap.getOrDefault((String) row[0], (String) row[0]))
+                                        .count(((Number) row[1]).longValue())
+                                        .build())
+                                .toList();
+
+                // 2. Check-in theo tháng
+                List<AdminDashboardStatsResponse.MonthlyCheckinCount> checkinsByMonth =
+                        checkinRepository.countCheckinsByMonth().stream()
+                                .map(row -> AdminDashboardStatsResponse.MonthlyCheckinCount.builder()
+                                        .month((String) row[0])
+                                        .count(((Number) row[1]).longValue())
+                                        .build())
+                                .toList();
+
+                // 3. Top 5 trạm sạc được check-in nhiều nhất
+                List<AdminDashboardStatsResponse.TopCheckinStation> topCheckinStations =
+                        checkinRepository.findTopCheckinStations(5).stream()
+                                .map(row -> AdminDashboardStatsResponse.TopCheckinStation.builder()
+                                        .stationId(((Number) row[0]).longValue())
+                                        .stationName((String) row[1])
+                                        .checkinCount(((Number) row[2]).longValue())
+                                        .build())
+                                .toList();
+
                 return AdminDashboardStatsResponse.builder()
                                 .totalStations(totalStations)
                                 .totalUsers(totalUsers)
                                 .totalReviews(totalReviews)
                                 .totalVisits(totalVisits)
+                                .totalCheckins(totalCheckins)
                                 .stationsByDistrict(stationsByDistrict)
                                 .reviewsByMonth(reviewsByMonth)
+                                .checkinsByStatus(checkinsByStatus)
+                                .checkinsByMonth(checkinsByMonth)
+                                .topCheckinStations(topCheckinStations)
                                 .build();
         }
 

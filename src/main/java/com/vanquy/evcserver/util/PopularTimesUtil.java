@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Lớp tiện ích sinh dữ liệu biểu đồ Popular Times (giờ bận rộn lịch sử)
+ * Lớp tiện ích sinh dữ liệu biểu đồ Popular Times
  * cho trạm sạc dựa trên stationId, dayOfWeek và dữ liệu check-in thực tế của người dùng.
  */
 public class PopularTimesUtil {
@@ -21,10 +21,10 @@ public class PopularTimesUtil {
      *
      * @param stationId     ID trạm sạc
      * @param checkinCounts Kết quả truy vấn đếm check-in từ Repository (Object[] gồm: day_of_week, hour_of_day, count)
-     * @return Map gồm key là thứ tiếng Việt ("Thứ 2".."Chủ nhật") và value là danh sách 24 số nguyên (0-100)
+     * @return Map gồm key là thứ tiếng Việt và value là danh sách 24 số nguyên (0-100)
      */
     public static Map<String, List<Integer>> getWeeklyPopularTimes(Long stationId, List<Object[]> checkinCounts) {
-        // 1. Phân tích kết quả đếm check-in từ database thành mảng 2 chiều 7 ngày x 24 giờ
+        //Phân tích kết quả đếm check-in từ database thành mảng 2 chiều 7 ngày x 24 giờ
         int[][] actualCounts = new int[7][24];
         int totalCheckins = 0;
         int maxHourlyCheckin = 0;
@@ -47,7 +47,7 @@ public class PopularTimesUtil {
             }
         }
 
-        // 2. Tính trọng số alpha dựa trên tổng số lượt check-in (càng nhiều check-in, độ tin cậy càng cao)
+        //Tính trọng số alpha dựa trên tổng số lượt check-in (càng nhiều check-in, độ tin cậy càng cao)
         // Nếu trạm sạc có từ 50 lượt check-in trở lên, sử dụng 100% dữ liệu thực tế
         double alpha = Math.min(1.0, (double) totalCheckins / 50.0);
 
@@ -58,19 +58,19 @@ public class PopularTimesUtil {
             int dayOfWeekNumber = d + 1; // 1 = Monday, ..., 7 = Sunday (cho hàm getBaseValue)
 
             for (int hour = 0; hour < 24; hour++) {
-                // a. Tính giá trị nền của trạm sạc
+                //Tính giá trị nền của trạm sạc
                 double base = getBaseValue(hour, dayOfWeekNumber);
                 double seed = Math.sin(stationId * 7.0 + dayOfWeekNumber * 13.0 + hour * 37.0);
                 int variation = (int) (seed * 15.0);
                 int baseVal = (int) Math.max(0, Math.min(100, base + variation));
 
-                // b. Tính giá trị thực tế chuẩn hóa (0-100) dựa trên giờ cao điểm nhất của trạm đó
+                //Tính giá trị thực tế chuẩn hóa (0-100) dựa trên giờ cao điểm nhất của trạm đó
                 double actualRate = 0.0;
                 if (maxHourlyCheckin > 0) {
                     actualRate = (double) actualCounts[d][hour] * 100.0 / (double) maxHourlyCheckin;
                 }
 
-                // c. Trộn lai
+                //Trộn lai
                 int blendedVal = (int) Math.round((1.0 - alpha) * baseVal + alpha * actualRate);
                 hoursData.add(blendedVal);
             }
