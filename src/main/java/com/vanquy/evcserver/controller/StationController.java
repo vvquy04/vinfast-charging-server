@@ -37,12 +37,15 @@ public class StationController {
             @RequestParam(defaultValue = "1.0") double weightDistance,
             @RequestParam(defaultValue = "1.0") double weightPower,
             @RequestParam(defaultValue = "1.0") double weightOccupancy,
-            @RequestParam(defaultValue = "1.0") double weightRating
+            @RequestParam(defaultValue = "1.0") double weightRating,
+            @RequestParam(required = false) Double userLatitude,
+            @RequestParam(required = false) Double userLongitude
     ) {
         List<StationSummaryResponse> data = stationService.searchStations(
                 latitude, longitude, radius, connectorType,
                 minPowerKw, maxPowerKw, minRating,
-                useTopsis, weightDistance, weightPower, weightOccupancy, weightRating
+                useTopsis, weightDistance, weightPower, weightOccupancy, weightRating,
+                userLatitude, userLongitude
         );
         return ResponseEntity.ok(ApiResponse.success("OK", data));
     }

@@ -33,7 +33,8 @@ public interface StationService {
             Double minRating,
             boolean useTopsis,
             double weightDistance, double weightPower,
-            double weightOccupancy, double weightRating
+            double weightOccupancy, double weightRating,
+            Double userLatitude, Double userLongitude
     );
 
     /**

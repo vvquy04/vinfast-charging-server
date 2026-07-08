@@ -52,7 +52,8 @@ public class StationServiceImpl implements StationService {
             Double minRating,
             boolean useTopsis,
             double weightDistance, double weightPower,
-            double weightOccupancy, double weightRating
+            double weightOccupancy, double weightRating,
+            Double userLatitude, Double userLongitude
     ) {
         //Bounding Box
         double deltaLat = radius / 111.12;
@@ -90,6 +91,23 @@ public class StationServiceImpl implements StationService {
                 } else {
                     s.setCrowdStatus(null);
                 }
+            }
+        }
+
+        // Tính toán lại khoảng cách địa lý thực tế tương đối với vị trí thực của người dùng (nếu có)
+        if (userLatitude != null && userLongitude != null && !stations.isEmpty()) {
+            for (StationSummaryResponse s : stations) {
+                double dist = calculateHaversineDistance(
+                        userLatitude, userLongitude,
+                        s.getLatitude().doubleValue(), s.getLongitude().doubleValue()
+                );
+                s.setDistance(Math.round(dist * 10.0) / 10.0);
+            }
+            if (!useTopsis) {
+                stations.sort((a, b) -> Double.compare(
+                        a.getDistance() != null ? a.getDistance() : 0.0,
+                        b.getDistance() != null ? b.getDistance() : 0.0
+                ));
             }
         }
 
@@ -274,5 +292,15 @@ public class StationServiceImpl implements StationService {
         if (hours < 24) return hours + " giờ trước";
         long days = duration.toDays();
         return days + " ngày trước";
+    }
+
+    private double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return 6371 * c; // Bán kính Trái Đất theo km
     }
 }

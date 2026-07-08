@@ -86,9 +86,9 @@ public class AdminServiceImpl implements AdminService {
                 // Bản đồ chuyển đổi mã trạng thái → nhãn tiếng Việt
                 Map<String, String> statusLabelMap = Map.of(
                         "EMPTY", "Trống chỗ",
-                        "MODERATE", "Vừa phải",
-                        "BUSY", "Đang bận / Đầy",
-                        "MAINTENANCE", "Bảo trì"
+                        "MODERATE", "Bình thường",
+                        "BUSY", "Đông đúc",
+                        "MAINTENANCE", "Đang bảo trì"
                 );
 
                 // 1. Phân bố check-in theo trạng thái
@@ -403,6 +403,15 @@ public class AdminServiceImpl implements AdminService {
                 StationCheckin checkin = checkinRepository.findById(checkinId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Không tìm thấy check-in với ID: " + checkinId));
+                
+                // Thu hồi 10 điểm thưởng của user (nếu có user và điểm > 0)
+                User user = checkin.getUser();
+                if (user != null) {
+                        int currentPoints = user.getRewardPoints() != null ? user.getRewardPoints() : 0;
+                        user.setRewardPoints(Math.max(0, currentPoints - 10)); // Trừ 10 điểm, tối thiểu là 0
+                        userRepository.save(user);
+                }
+
                 checkinRepository.delete(checkin);
         }
 
