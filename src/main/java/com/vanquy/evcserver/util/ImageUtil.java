@@ -75,16 +75,14 @@ public class ImageUtil {
         if (fileName == null || fileName.isBlank()) {
             return null;
         }
-        if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
-            return fileName;
-        }
+        String cleanName = sanitizeCheckinImage(fileName);
         try {
             return ServletUriComponentsBuilder.fromCurrentContextPath()
                     .path("/uploads/checkins/")
-                    .path(fileName)
+                    .path(cleanName)
                     .toUriString();
         } catch (Exception e) {
-            return "http://localhost:8080/uploads/checkins/" + fileName;
+            return "http://localhost:8080/uploads/checkins/" + cleanName;
         }
     }
 }
