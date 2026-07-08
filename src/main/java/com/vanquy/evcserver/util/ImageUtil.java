@@ -59,4 +59,32 @@ public class ImageUtil {
             return "http://localhost:8080/uploads/avatars/" + fileName;
         }
     }
+
+    public static String sanitizeCheckinImage(String urlOrFilename) {
+        if (urlOrFilename == null) {
+            return null;
+        }
+        String fileName = urlOrFilename.trim();
+        if (fileName.contains("/uploads/checkins/")) {
+            fileName = fileName.substring(fileName.lastIndexOf("/uploads/checkins/") + "/uploads/checkins/".length());
+        }
+        return fileName;
+    }
+
+    public static String getCheckinImageUrl(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            return null;
+        }
+        if (fileName.startsWith("http://") || fileName.startsWith("https://")) {
+            return fileName;
+        }
+        try {
+            return ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/uploads/checkins/")
+                    .path(fileName)
+                    .toUriString();
+        } catch (Exception e) {
+            return "http://localhost:8080/uploads/checkins/" + fileName;
+        }
+    }
 }

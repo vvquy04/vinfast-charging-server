@@ -415,7 +415,7 @@ public class AdminServiceImpl implements AdminService {
                                 .stationId(checkin.getStation().getStationId())
                                 .stationName(checkin.getStation().getName())
                                 .status(checkin.getStatus())
-                                .imageUrl(checkin.getImageUrl())
+                                .imageUrl(ImageUtil.getCheckinImageUrl(checkin.getImageUrl()))
                                 .createdAt(checkin.getCreatedAt())
                                 .build();
         }

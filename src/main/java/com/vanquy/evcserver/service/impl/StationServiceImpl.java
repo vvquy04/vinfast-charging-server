@@ -201,7 +201,7 @@ public class StationServiceImpl implements StationService {
                 .user(user)
                 .station(station)
                 .status(status)
-                .imageUrl(imageUrl)
+                .imageUrl(com.vanquy.evcserver.util.ImageUtil.sanitizeCheckinImage(imageUrl))
                 .build();
         checkinRepository.save(checkin);
 
