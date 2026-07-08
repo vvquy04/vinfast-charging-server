@@ -170,7 +170,7 @@ public class StationServiceImpl implements StationService {
 
     @Override
     @Transactional
-    public void checkin(Long userId, Long stationId, String status) {
+    public void checkin(Long userId, Long stationId, String status, String imageUrl) {
         //Validate trạng thái
         if (!Set.of("EMPTY", "MODERATE", "BUSY", "MAINTENANCE").contains(status)) {
             throw new BadRequestException(
@@ -201,6 +201,7 @@ public class StationServiceImpl implements StationService {
                 .user(user)
                 .station(station)
                 .status(status)
+                .imageUrl(imageUrl)
                 .build();
         checkinRepository.save(checkin);
 

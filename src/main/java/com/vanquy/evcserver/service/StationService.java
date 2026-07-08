@@ -47,6 +47,7 @@ public interface StationService {
      * @param userId     ID người dùng đã xác thực
      * @param stationId  ID trạm sạc
      * @param status     Trạng thái báo cáo (EMPTY, MODERATE, BUSY, MAINTENANCE)
+     * @param imageUrl   Đường dẫn ảnh chụp check-in thực tế (nullable)
      */
-    void checkin(Long userId, Long stationId, String status);
+    void checkin(Long userId, Long stationId, String status, String imageUrl);
 }

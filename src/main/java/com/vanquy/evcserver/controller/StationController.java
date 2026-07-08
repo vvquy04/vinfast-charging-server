@@ -62,7 +62,7 @@ public class StationController {
     /**
      * Check-in trạm sạc.
      * POST /api/stations/{stationId}/checkin
-     * Body: { "status": "EMPTY" | "MODERATE" | "BUSY" | "MAINTENANCE" }
+     * Body: { "status": "EMPTY" | "MODERATE" | "BUSY" | "MAINTENANCE", "imageUrl": "http://..." }
      */
     @PostMapping("/{stationId}/checkin")
     public ResponseEntity<ApiResponse<String>> checkin(
@@ -71,8 +71,9 @@ public class StationController {
     ) {
         Long userId = SecurityUtil.getCurrentUserId();
         String status = body.getOrDefault("status", "EMPTY");
+        String imageUrl = body.get("imageUrl");
 
-        stationService.checkin(userId, stationId, status);
+        stationService.checkin(userId, stationId, status, imageUrl);
 
         return ResponseEntity.ok(ApiResponse.success(
                 "Check-in thành công! Bạn đã nhận được 10 điểm thưởng.", null));
