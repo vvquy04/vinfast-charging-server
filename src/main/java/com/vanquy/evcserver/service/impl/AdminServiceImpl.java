@@ -7,6 +7,7 @@ import com.vanquy.evcserver.model.ChargingStation;
 import com.vanquy.evcserver.model.ConnectorType;
 import com.vanquy.evcserver.model.Review;
 import com.vanquy.evcserver.model.User;
+import com.vanquy.evcserver.model.StationCheckin;
 import com.vanquy.evcserver.repository.*;
 import com.vanquy.evcserver.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -364,6 +365,58 @@ public class AdminServiceImpl implements AdminService {
                                 .rating(review.getRating())
                                 .comment(review.getComment())
                                 .createdAt(review.getCreatedAt())
+                                .build();
+        }
+
+        @Override
+        public Page<CheckinResponse> getAllCheckins(String search, Pageable pageable) {
+                List<StationCheckin> allCheckins = checkinRepository.findAll();
+
+                // Sắp xếp mặc định giảm dần theo checkinId
+                allCheckins.sort((a, b) -> b.getCheckinId().compareTo(a.getCheckinId()));
+
+                // Lọc theo từ khóa tìm kiếm
+                if (search != null && !search.isBlank()) {
+                        String lower = search.toLowerCase();
+                        allCheckins = allCheckins.stream()
+                                        .filter(c -> (c.getUser().getFullName() != null && c.getUser().getFullName().toLowerCase().contains(lower))
+                                                || (c.getStation().getName() != null && c.getStation().getName().toLowerCase().contains(lower))
+                                                || c.getStatus().toLowerCase().contains(lower))
+                                        .toList();
+                }
+
+                // Phân trang thủ công
+                int start = (int) pageable.getOffset();
+                int end = Math.min(start + pageable.getPageSize(), allCheckins.size());
+                List<CheckinResponse> page = (start > allCheckins.size())
+                                ? List.of()
+                                : allCheckins.subList(start, end).stream()
+                                                .map(this::toCheckinResponse)
+                                                .toList();
+
+                return new PageImpl<>(page, pageable, allCheckins.size());
+        }
+
+        @Override
+        @Transactional
+        public void deleteCheckin(Long checkinId) {
+                StationCheckin checkin = checkinRepository.findById(checkinId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Không tìm thấy check-in với ID: " + checkinId));
+                checkinRepository.delete(checkin);
+        }
+
+        private CheckinResponse toCheckinResponse(StationCheckin checkin) {
+                return CheckinResponse.builder()
+                                .checkinId(checkin.getCheckinId())
+                                .userId(checkin.getUser().getUserId())
+                                .fullName(checkin.getUser().getFullName())
+                                .avatarUrl(ImageUtil.getAvatarImageUrl(checkin.getUser().getAvatarUrl()))
+                                .stationId(checkin.getStation().getStationId())
+                                .stationName(checkin.getStation().getName())
+                                .status(checkin.getStatus())
+                                .imageUrl(checkin.getImageUrl())
+                                .createdAt(checkin.getCreatedAt())
                                 .build();
         }
 }

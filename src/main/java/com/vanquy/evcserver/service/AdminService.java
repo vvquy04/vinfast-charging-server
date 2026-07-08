@@ -34,4 +34,9 @@ public interface AdminService {
     Page<ReviewResponse> getAllReviews(String search, Pageable pageable);
 
     void deleteReview(Long reviewId);
+
+    // ─── Quản lý Check-in ──────────────────────────
+    Page<com.vanquy.evcserver.dto.response.CheckinResponse> getAllCheckins(String search, Pageable pageable);
+
+    void deleteCheckin(Long checkinId);
 }

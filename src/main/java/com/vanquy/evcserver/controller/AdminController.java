@@ -150,4 +150,35 @@ public class AdminController {
                 "message", "Đã xóa đánh giá"
         ));
     }
+
+    // ═══════════════════════════════════════════════════
+    //  QUẢN LÝ CHECK-IN
+    // ═══════════════════════════════════════════════════
+
+    @GetMapping("/checkins")
+    public ResponseEntity<?> getAllCheckins(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String search
+    ) {
+        Page<com.vanquy.evcserver.dto.response.CheckinResponse> data = adminService.getAllCheckins(
+                search, PageRequest.of(page, size, Sort.by("checkinId").descending())
+        );
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "data", data.getContent(),
+                "totalElements", data.getTotalElements(),
+                "totalPages", data.getTotalPages(),
+                "currentPage", data.getNumber()
+        ));
+    }
+
+    @DeleteMapping("/checkins/{checkinId}")
+    public ResponseEntity<?> deleteCheckin(@PathVariable Long checkinId) {
+        adminService.deleteCheckin(checkinId);
+        return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Đã xóa check-in"
+        ));
+    }
 }
