@@ -143,6 +143,14 @@ public class ChargingController {
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
         String paymentUrl = VnPayConfig.vnp_PayUrl + "?" + queryUrl;
 
+        System.out.println("=== VNPAY PAYMENT DEBUG ===");
+        System.out.println("TmnCode: " + VnPayConfig.vnp_TmnCode);
+        System.out.println("HashSecret: " + VnPayConfig.vnp_HashSecret);
+        System.out.println("HashData String: " + hashDataString);
+        System.out.println("Secure Hash: " + vnp_SecureHash);
+        System.out.println("Payment URL: " + paymentUrl);
+        System.out.println("===========================");
+
         return ResponseEntity.ok(Map.of(
                 "success", true,
                 "paymentUrl", paymentUrl
