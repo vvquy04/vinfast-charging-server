@@ -118,26 +118,36 @@ public class ChargingController {
 
         List<String> fieldNames = new ArrayList<>(vnp_Params.keySet());
         Collections.sort(fieldNames);
-        List<String> hashParts = new ArrayList<>();
-        List<String> queryParts = new ArrayList<>();
-
-        for (String fieldName : fieldNames) {
+        StringBuilder hashData = new StringBuilder();
+        StringBuilder query = new StringBuilder();
+        Iterator<String> itr = fieldNames.iterator();
+        while (itr.hasNext()) {
+            String fieldName = itr.next();
             String fieldValue = vnp_Params.get(fieldName);
             if ((fieldValue != null) && (fieldValue.length() > 0)) {
                 try {
-                    String encodedKey = URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString()).replace("+", "%20");
-                    String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()).replace("+", "%20");
+                    //Build hash data
+                    hashData.append(fieldName);
+                    hashData.append('=');
+                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
 
-                    hashParts.add(fieldName + "=" + fieldValue);
-                    queryParts.add(encodedKey + "=" + encodedValue);
+                    //Build query
+                    query.append(URLEncoder.encode(fieldName, StandardCharsets.US_ASCII.toString()));
+                    query.append('=');
+                    query.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+
+                    if (itr.hasNext()) {
+                        query.append('&');
+                        hashData.append('&');
+                    }
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
             }
         }
 
-        String hashDataString = String.join("&", hashParts);
-        String queryUrl = String.join("&", queryParts);
+        String hashDataString = hashData.toString();
+        String queryUrl = query.toString();
 
         String vnp_SecureHash = VnPayConfig.hmacSHA512(VnPayConfig.vnp_HashSecret, hashDataString);
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
