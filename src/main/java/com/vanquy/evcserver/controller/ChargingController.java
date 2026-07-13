@@ -175,15 +175,28 @@ public class ChargingController {
     ) {
         Long userId = Long.parseLong(txnRef.split("_")[0]);
         boolean success = "00".equals(responseCode);
+
+        System.out.println("=== VNPAY CALLBACK DETECTED ===");
+        System.out.println("ResponseCode: " + responseCode);
+        System.out.println("Amount Cents: " + amountCents);
+        System.out.println("TxnRef: " + txnRef);
+        System.out.println("User ID parsed: " + userId);
+        System.out.println("Is Success: " + success);
+
         if (success) {
             double depositAmount = amountCents / 100.0;
             User user = userRepository.findById(userId).orElse(null);
             if (user != null) {
                 double current = user.getBalance() != null ? user.getBalance() : 0.0;
+                System.out.println("User found. Current balance: " + current);
                 user.setBalance(current + depositAmount);
-                userRepository.save(user);
+                userRepository.saveAndFlush(user);
+                System.out.println("Saved user. New balance in DB: " + user.getBalance());
+            } else {
+                System.out.println("ERROR: User NOT found in database with ID: " + userId);
             }
         }
+        System.out.println("=================================");
 
         String htmlContent = "<html><head><meta charset=\"UTF-8\"><title>EVCPoint Payment</title>" +
                 "<style>body { font-family: sans-serif; text-align: center; padding-top: 50px; background-color: #f7f9fc; color: #333; }" +
