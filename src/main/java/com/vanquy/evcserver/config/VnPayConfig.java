@@ -12,8 +12,8 @@ import java.util.Random;
 public class VnPayConfig {
 
     public static final String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static final String vnp_TmnCode = "2QXUI4J4"; // Public VNPay Sandbox TmnCode
-    public static final String vnp_HashSecret = "GETDTYJAACNYHQAQAJKRMTYNPMVJSVZO"; // Public VNPay Sandbox HashSecret
+    public static final String vnp_TmnCode = "360POG4P"; // Public VNPay Sandbox TmnCode
+    public static final String vnp_HashSecret = "0FLIO1VIJ05928QUWZB27OUYG47U46IM"; // Public VNPay Sandbox HashSecret
     public static final String vnp_Version = "2.1.0";
     public static final String vnp_Command = "pay";
     public static final String vnp_OrderType = "other";
@@ -31,7 +31,7 @@ public class VnPayConfig {
             byte[] result = hmac512.doFinal(dataBytes);
             StringBuilder sb = new StringBuilder(2 * result.length);
             for (byte b : result) {
-                sb.append(String.format("%02X", b & 0xff));
+                sb.append(String.format("%02x", b & 0xff));
             }
             return sb.toString();
         } catch (Exception ex) {
