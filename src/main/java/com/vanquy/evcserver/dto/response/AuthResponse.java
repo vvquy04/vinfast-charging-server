@@ -29,4 +29,5 @@ public class AuthResponse {
     private String role;
     private boolean isNewUser;
     private String token;
+    private Double balance;
 }

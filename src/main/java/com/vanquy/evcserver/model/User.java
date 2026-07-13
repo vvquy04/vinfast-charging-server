@@ -67,6 +67,10 @@ public class User {
     @Builder.Default
     private Integer rewardPoints = 0;
 
+    @Column(name = "balance")
+    @Builder.Default
+    private Double balance = 500000.0; // Khởi tạo 500k ví điện tử ảo
+
     @PrePersist
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();

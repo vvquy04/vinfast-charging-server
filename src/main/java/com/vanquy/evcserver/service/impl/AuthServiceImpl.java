@@ -151,6 +151,7 @@ public class AuthServiceImpl implements AuthService {
                 .role(user.getRole())
                 .isNewUser(isNewUser)
                 .token(token)
+                .balance(user.getBalance() != null ? user.getBalance() : 0.0)
                 .build();
     }
 

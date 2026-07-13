@@ -30,4 +30,5 @@ public class UserProfileResponse {
 
     private LocalDateTime createdAt;
     private Integer rewardPoints;
+    private Double balance;
 }

@@ -81,6 +81,7 @@ public class UserServiceImpl implements UserService {
                 .connectorType(user.getConnectorType())
                 .createdAt(user.getCreatedAt())
                 .rewardPoints(user.getRewardPoints() != null ? user.getRewardPoints() : 0)
+                .balance(user.getBalance() != null ? user.getBalance() : 0.0)
                 .build();
     }
 
