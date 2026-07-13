@@ -84,7 +84,7 @@ public class ChargingController {
         Long userId = SecurityUtil.getCurrentUserId();
         long amount = request.getAmount() * 100L; // VNPay sử dụng xu (1đ x 100)
 
-        String vnp_TxnRef = VnPayConfig.getRandomNumber(8);
+        String vnp_TxnRef = userId + "_" + VnPayConfig.getRandomNumber(8);
         String vnp_IpAddr = VnPayConfig.getIpAddress(servletRequest);
 
         // Sinh link callback động dựa trên host/port thực tế của server đang chạy
@@ -92,7 +92,7 @@ public class ChargingController {
         String serverName = servletRequest.getServerName();
         int serverPort = servletRequest.getServerPort();
         String baseUrl = scheme + "://" + serverName + ":" + serverPort;
-        String vnp_ReturnUrl = baseUrl + "/api/payment/vnpay/callback?userId=" + userId;
+        String vnp_ReturnUrl = baseUrl + "/api/payment/vnpay/callback";
 
         Map<String, String> vnp_Params = new HashMap<>();
         vnp_Params.put("vnp_Version", VnPayConfig.vnp_Version);
@@ -160,8 +160,9 @@ public class ChargingController {
     public ResponseEntity<String> vnpayCallback(
             @RequestParam("vnp_ResponseCode") String responseCode,
             @RequestParam("vnp_Amount") Long amountCents,
-            @RequestParam("userId") Long userId
+            @RequestParam("vnp_TxnRef") String txnRef
     ) {
+        Long userId = Long.parseLong(txnRef.split("_")[0]);
         boolean success = "00".equals(responseCode);
         if (success) {
             double depositAmount = amountCents / 100.0;
